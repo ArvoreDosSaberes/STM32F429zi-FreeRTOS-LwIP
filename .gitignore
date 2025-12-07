@@ -3,3 +3,5 @@
 .gdbinit
 .project
 Debug
+Release
+env.cmake

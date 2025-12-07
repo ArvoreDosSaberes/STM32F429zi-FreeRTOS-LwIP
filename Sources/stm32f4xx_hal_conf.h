@@ -30,9 +30,9 @@ extern "C" {
 #define HAL_PWR_MODULE_ENABLED
 #define HAL_RCC_MODULE_ENABLED
 #define HAL_UART_MODULE_ENABLED
+#define HAL_ADC_MODULE_ENABLED
 
 /* Módulos não utilizados (comentados para referência) */
-/* #define HAL_ADC_MODULE_ENABLED */
 /* #define HAL_CAN_MODULE_ENABLED */
 /* #define HAL_CRC_MODULE_ENABLED */
 /* #define HAL_DAC_MODULE_ENABLED */
@@ -246,6 +246,10 @@ extern "C" {
 
 #ifdef HAL_UART_MODULE_ENABLED
     #include "stm32f4xx_hal_uart.h"
+#endif
+
+#ifdef HAL_ADC_MODULE_ENABLED
+    #include "stm32f4xx_hal_adc.h"
 #endif
 
 #ifdef __cplusplus
