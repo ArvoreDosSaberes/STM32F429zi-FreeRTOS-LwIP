@@ -12,15 +12,14 @@
 
 O projeto tem como objetivo **ensinar e facilitar o desenvolvimento** com microcontroladores da família STM32 em especial o STM32F411zi. Oferecemos à comunidade templates prontos para uso, permitindo que desenvolvedores deem os primeiros passos de forma rápida e eficiente.
 
-
 Oferecemos à comunidade **templates prontos para uso**, permitindo que desenvolvedores deem os primeiros passos com o STM32 de forma rápida e eficiente, sem a necessidade de configurar tudo do zero.
-
 
 ### Links
 
 - **GitHub**: https://github.com/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP
 - **Site**: https://mcu.tec.br
 - **YouTube**: https://youtube.com/@mcu_fpga
+
 ### Recursos Principais
 
 | Recurso                         | Descrição                                                                |
@@ -68,11 +67,13 @@ Este documento explica, passo a passo, como:
 
 ---
 
-## 1. Compilando o projeto
+## 1. Compilando o projeto para 
 
 O projeto usa **CMake** com **Unix Makefiles** e a toolchain ARM.
 
 ### 1.1. Configurar o build (Debug)
+
+Se desejar gerar o projeto para **Release** substitua a palavra ```Debug``` para ```Release```.
 
 No diretório raiz do projeto (`STM32-F429zi-http`):
 
