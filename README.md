@@ -1,4 +1,4 @@
-# Tutorial STM32-F429ZI + FreeRTOS + LwIP HTTP Server
+# STM32F429ZI Template - FreeRTOS + LwIP HTTP Server
 
 ![Visitors](https://visitor-badge.laobi.icu/badge?page_id=ArvoreDosSaberes.STM32F429zi-FreeRTOS-LwIP)
 [![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
@@ -9,6 +9,32 @@
 [![ARM Cortex-M4](https://img.shields.io/badge/ARM-Cortex--M4-green.svg)](https://developer.arm.com/Processors/Cortex-M4)
 [![GitHub Stars](https://img.shields.io/github/stars/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP?style=social)](https://github.com/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP)
 [![GitHub Issues](https://img.shields.io/github/issues/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP)](https://github.com/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP/issues)
+
+## Sobre o Projeto
+
+Este projeto tem como objetivo **ensinar e facilitar o desenvolvimento** com microcontroladores da família STM32, especificamente o **STM32F429ZI**.
+
+Oferecemos à comunidade **templates prontos para uso**, permitindo que desenvolvedores deem os primeiros passos com o STM32 de forma rápida e eficiente, sem a necessidade de configurar tudo do zero.
+
+### Recursos Principais
+
+| Recurso | Descrição |
+|---------|----------|
+| ⚙️ **FreeRTOS v11.2** | Sistema operacional de tempo real para gerenciamento de tarefas e recursos |
+| 🌐 **LwIP v2.2** | Pilha TCP/IP leve e eficiente para conectividade Ethernet |
+| 📡 **Servidor HTTP** | Servidor web integrado para monitoramento e configuração |
+| 📚 **Código Documentado** | Comentários detalhados e tutoriais para facilitar o aprendizado |
+
+### Especificações Técnicas
+
+- **Microcontrolador**: STM32F429ZI (ARM Cortex-M4 @ 180 MHz)
+- **Memória**: 2 MB Flash, 256 KB SRAM
+- **Conectividade**: Ethernet 10/100 Mbps (PHY LAN8742A)
+- **Interface Serial**: UART3 (115200 baud, 8N1)
+
+---
+
+## Tutorial
 
 Este documento explica, passo a passo, como:
 
@@ -463,3 +489,7 @@ Este documento pode ser expandido com mais exemplos específicos do projeto (uso
 - **Clock**: SYSCLK = 180 MHz, HCLK = 180 MHz, APB1 = 45 MHz, APB2 = 90 MHz
 - **UART3**: PD8 (TX), PD9 (RX), 115200 baud, 8N1
 - **Ethernet**: PHY LAN8742A, RMII interface
+
+---
+
+*Desenvolvido com ❤️ por [Carlos Delfino](https://github.com/carlosdelfino)*
