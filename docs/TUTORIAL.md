@@ -492,4 +492,4 @@ Após dominar este template, você pode:
 
 ---
 
-*Desenvolvido com ❤️ por Arvore dos Saberes*
+*Desenvolvido com ❤️ por [Carlos Delfino](https://github.com/carlosdelfino)*
