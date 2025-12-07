@@ -370,6 +370,40 @@ extern "C" {
 #define LWIP_HTTPD_MAX_REQUEST_URI_LEN  128
 
 /*-----------------------------------------------------------------------------
+ * Configurações do Cliente MQTT
+ *----------------------------------------------------------------------------*/
+
+/**
+ * @brief Habilita o cliente MQTT do LwIP.
+ */
+#define LWIP_ALTCP                      0
+
+/**
+ * @brief Tamanho do buffer de saída MQTT.
+ */
+#define MQTT_OUTPUT_RINGBUF_SIZE        256
+
+/**
+ * @brief Tamanho do buffer de cabeçalho variável MQTT.
+ */
+#define MQTT_VAR_HEADER_BUFFER_LEN      128
+
+/**
+ * @brief Tamanho máximo do request em voo.
+ */
+#define MQTT_REQ_MAX_IN_FLIGHT          4
+
+/**
+ * @brief Timeout para ciclos de requisição MQTT (segundos).
+ */
+#define MQTT_REQ_TIMEOUT                30
+
+/**
+ * @brief Timeout de conexão MQTT (segundos).
+ */
+#define MQTT_CONNECT_TIMOUT             100
+
+/*-----------------------------------------------------------------------------
  * Configurações de Estatísticas
  *----------------------------------------------------------------------------*/
 

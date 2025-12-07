@@ -1,0 +1,9 @@
+# =============================================================================
+# Dependências Python para Scripts de Teste MQTT
+# =============================================================================
+# Instalação: pip install -r requirements.txt
+# =============================================================================
+
+# Cliente MQTT para Python
+# https://eclipse.dev/paho/files/paho.mqtt.python/html/index.html
+paho-mqtt>=2.0.0

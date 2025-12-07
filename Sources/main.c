@@ -28,6 +28,7 @@
 
 #include "httpserver.h"
 #include "system_config.h"
+#include "mqtt_service.h"
 
 /*-----------------------------------------------------------------------------
  * Declarações Antecipadas (Forward Declarations)
@@ -41,6 +42,9 @@ static void appMainTask(void *pvParameters);
 
 /* Tarefa de monitoramento do sistema */
 static void appMonitorTask(void *pvParameters);
+
+/* Tarefa do serviço MQTT */
+static void appMqttTask(void *pvParameters);
 
 
 /*-----------------------------------------------------------------------------
@@ -74,6 +78,14 @@ int main(void)
                 256,
                 NULL,
                 1,
+                NULL);
+
+    /* Criar tarefa MQTT */
+    xTaskCreate(appMqttTask,
+                "MQTTInit",
+                512,
+                NULL,
+                2,
                 NULL);
 
     /* Iniciar o escalonador do FreeRTOS */
@@ -191,6 +203,81 @@ static void appMonitorTask(void *pvParameters)
                (unsigned int)freeHeap, (unsigned int)minFreeHeap);
 
         vTaskDelay(pdMS_TO_TICKS(30000));
+    }
+}
+
+/**
+ * @brief Tarefa de inicialização e gerenciamento do serviço MQTT.
+ *
+ * Aguarda a rede estar disponível (IP atribuído via DHCP) e então
+ * inicializa e inicia o serviço MQTT para publicar temperatura
+ * e receber comandos do ventilador.
+ *
+ * @param pvParameters Parâmetros da tarefa (não utilizado).
+ */
+static void appMqttTask(void *pvParameters)
+{
+    (void)pvParameters;
+    
+    char ipBuffer[16];
+    MqttServiceError mqttErr;
+    
+    printf("[MQTTInit] Aguardando IP via DHCP...\r\n");
+    
+    /* Aguardar até ter um IP válido */
+    while (!httpServerGetIpAddress(ipBuffer))
+    {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+    
+    printf("[MQTTInit] IP obtido: %s\r\n", ipBuffer);
+    printf("[MQTTInit] Iniciando servico MQTT...\r\n");
+    
+    /* Inicializar serviço MQTT */
+    mqttErr = mqttServiceInit();
+    if (mqttErr != MQTT_SERVICE_OK)
+    {
+        printf("[MQTTInit] Erro ao inicializar MQTT: %d\r\n", mqttErr);
+        
+        /* Manter tarefa rodando mas em estado de erro */
+        for (;;)
+        {
+            printf("[MQTTInit] Servico MQTT em estado de erro\r\n");
+            vTaskDelay(pdMS_TO_TICKS(30000));
+        }
+    }
+    
+    /* Iniciar tarefa do serviço MQTT */
+    mqttErr = mqttServiceStart();
+    if (mqttErr != MQTT_SERVICE_OK)
+    {
+        printf("[MQTTInit] Erro ao iniciar tarefa MQTT: %d\r\n", mqttErr);
+        
+        for (;;)
+        {
+            vTaskDelay(pdMS_TO_TICKS(30000));
+        }
+    }
+    
+    printf("[MQTTInit] Servico MQTT iniciado com sucesso!\r\n");
+    
+    /* Monitorar status do serviço MQTT periodicamente */
+    for (;;)
+    {
+        MqttServiceStatus status;
+        mqttServiceGetStatus(&status);
+        
+        printf("[MQTTInit] MQTT Status - Estado: %d, Msgs Pub: %lu, Msgs Rcv: %lu, Reconexoes: %lu\r\n",
+               status.state,
+               (unsigned long)status.messagesPublished,
+               (unsigned long)status.messagesReceived,
+               (unsigned long)status.reconnectCount);
+        
+        printf("[MQTTInit] Ultima temp: %.1f C, Ventilador: %s\r\n",
+               status.lastTemperature,
+               status.fanState ? "ON" : "OFF");
+        
+        vTaskDelay(pdMS_TO_TICKS(60000));  /* Log a cada 60 segundos */
     }
 }
 

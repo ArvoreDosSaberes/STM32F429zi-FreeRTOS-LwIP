@@ -12,6 +12,89 @@
 #############################################################################################################################
 cmake_minimum_required(VERSION 3.20)
 
+#############################################################################################################################
+# Carregamento do arquivo de configuração de ambiente (env.cmake)
+#############################################################################################################################
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/env.cmake")
+    include("${CMAKE_CURRENT_SOURCE_DIR}/env.cmake")
+else()
+    message(FATAL_ERROR "Arquivo env.cmake não encontrado! Copie env.cmake.example para env.cmake e configure as variáveis.")
+endif()
+
+#############################################################################################################################
+# Validação das variáveis obrigatórias do env.cmake
+#############################################################################################################################
+
+# Valores padrão permitidos
+if(NOT DEFINED ENV{LOG_LEVEL} OR "$ENV{LOG_LEVEL}" STREQUAL "")
+    set(ENV{LOG_LEVEL} "1")
+    message(STATUS "LOG_LEVEL não definido. Usando valor padrão: 1")
+endif()
+
+if(NOT DEFINED ENV{MQTT_BROKER} OR "$ENV{MQTT_BROKER}" STREQUAL "")
+    set(ENV{MQTT_BROKER} "mqtt.rapport.tec.br")
+    message(STATUS "MQTT_BROKER não definido. Usando valor padrão: mqtt.rapport.tec.br")
+endif()
+
+if(NOT DEFINED ENV{ENABLE_STACK_WATERMARK} OR "$ENV{ENABLE_STACK_WATERMARK}" STREQUAL "")
+    set(ENV{ENABLE_STACK_WATERMARK} "0")
+    message(STATUS "ENABLE_STACK_WATERMARK não definido. Usando valor padrão: 0")
+endif()
+
+# Variáveis obrigatórias (sem valor padrão)
+if(NOT DEFINED ENV{MQTT_BROKER_PORT} OR "$ENV{MQTT_BROKER_PORT}" STREQUAL "")
+    message(FATAL_ERROR "MQTT_BROKER_PORT não definido no env.cmake! Esta variável é obrigatória.")
+endif()
+
+if(NOT DEFINED ENV{MQTT_CLIENT_ID} OR "$ENV{MQTT_CLIENT_ID}" STREQUAL "")
+    message(FATAL_ERROR "MQTT_CLIENT_ID não definido no env.cmake! Esta variável é obrigatória.")
+endif()
+
+if(NOT DEFINED ENV{MQTT_BASE_TOPIC} OR "$ENV{MQTT_BASE_TOPIC}" STREQUAL "")
+    message(FATAL_ERROR "MQTT_BASE_TOPIC não definido no env.cmake! Esta variável é obrigatória.")
+endif()
+
+if(NOT DEFINED ENV{MQTT_RACK_NUMBER} OR "$ENV{MQTT_RACK_NUMBER}" STREQUAL "")
+    message(FATAL_ERROR "MQTT_RACK_NUMBER não definido no env.cmake! Esta variável é obrigatória.")
+endif()
+
+# MQTT_USERNAME e MQTT_PASSWORD são opcionais (podem ser "" ou não definidos)
+if(NOT DEFINED ENV{MQTT_USERNAME})
+    set(ENV{MQTT_USERNAME} "")
+endif()
+if(NOT DEFINED ENV{MQTT_PASSWORD})
+    set(ENV{MQTT_PASSWORD} "")
+endif()
+
+# Variáveis opcionais com valores padrão
+if(NOT DEFINED ENV{MQTT_PUBLISH_INTERVAL_MS} OR "$ENV{MQTT_PUBLISH_INTERVAL_MS}" STREQUAL "")
+    set(ENV{MQTT_PUBLISH_INTERVAL_MS} "5000")
+endif()
+
+if(NOT DEFINED ENV{MQTT_QOS} OR "$ENV{MQTT_QOS}" STREQUAL "")
+    set(ENV{MQTT_QOS} "1")
+endif()
+
+if(NOT DEFINED ENV{MQTT_KEEP_ALIVE_S} OR "$ENV{MQTT_KEEP_ALIVE_S}" STREQUAL "")
+    set(ENV{MQTT_KEEP_ALIVE_S} "60")
+endif()
+
+if(NOT DEFINED ENV{RACK_VERSION} OR "$ENV{RACK_VERSION}" STREQUAL "")
+    set(ENV{RACK_VERSION} "0.0.1")
+endif()
+
+# Log das configurações carregadas
+message(STATUS "=== Configurações MQTT ===")
+message(STATUS "  MQTT_BROKER: $ENV{MQTT_BROKER}")
+message(STATUS "  MQTT_BROKER_PORT: $ENV{MQTT_BROKER_PORT}")
+message(STATUS "  MQTT_CLIENT_ID: $ENV{MQTT_CLIENT_ID}")
+message(STATUS "  MQTT_USERNAME: $ENV{MQTT_USERNAME}")
+message(STATUS "  MQTT_BASE_TOPIC: $ENV{MQTT_BASE_TOPIC}")
+message(STATUS "  MQTT_RACK_NUMBER: $ENV{MQTT_RACK_NUMBER}")
+message(STATUS "  MQTT_PUBLISH_INTERVAL_MS: $ENV{MQTT_PUBLISH_INTERVAL_MS}")
+message(STATUS "  LOG_LEVEL: $ENV{LOG_LEVEL}")
+message(STATUS "==========================")
+
 ###################### CONSTANTS ######################################
 set (PROJECT_TYPE_EXECUTABLE          "exe")
 set (PROJECT_TYPE_STATIC_LIBRARY      "static-lib")
@@ -57,12 +140,30 @@ set (PROJECT_SOURCES
 	Sources/httpserver.c
 	Sources/webpages.c
 	Sources/system_config.c
+	Sources/mqtt_service.c
+	Sources/temperature_sensor.c
+	Sources/fan_controller.c
 	)
 
 set (PROJECT_DEFINES
 	# LIST COMPILER DEFINITIONS HERE
 	USE_HAL_DRIVER
 	STM32F429xx
+	# Definições do env.cmake para MQTT
+	MQTT_BROKER="$ENV{MQTT_BROKER}"
+	MQTT_BROKER_PORT=$ENV{MQTT_BROKER_PORT}
+	MQTT_CLIENT_ID="$ENV{MQTT_CLIENT_ID}"
+	MQTT_USERNAME="$ENV{MQTT_USERNAME}"
+	MQTT_PASSWORD="$ENV{MQTT_PASSWORD}"
+	MQTT_BASE_TOPIC="$ENV{MQTT_BASE_TOPIC}"
+	MQTT_RACK_NUMBER="$ENV{MQTT_RACK_NUMBER}"
+	MQTT_PUBLISH_INTERVAL_MS=$ENV{MQTT_PUBLISH_INTERVAL_MS}
+	MQTT_QOS=$ENV{MQTT_QOS}
+	MQTT_KEEP_ALIVE_S=$ENV{MQTT_KEEP_ALIVE_S}
+	# Outras definições do env.cmake
+	LOG_LEVEL=$ENV{LOG_LEVEL}
+	RACK_VERSION="$ENV{RACK_VERSION}"
+	ENABLE_STACK_WATERMARK=$ENV{ENABLE_STACK_WATERMARK}
     )
 
 set (PROJECT_INCLUDES
@@ -103,6 +204,8 @@ set(STM32_HAL_SRCS
     ${STM32CUBEF4_DIR}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c
     ${STM32CUBEF4_DIR}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c
     ${STM32CUBEF4_DIR}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c
+    ${STM32CUBEF4_DIR}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c
+    ${STM32CUBEF4_DIR}/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc_ex.c
     ${STM32CUBEF4_DIR}/Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c
 )
 
@@ -256,6 +359,11 @@ set(LWIP_APPS_SRCS
     ${LWIP_DIR}/src/apps/http/fs.c
 )
 
+# Arquivos do cliente MQTT
+set(LWIP_MQTT_SRCS
+    ${LWIP_DIR}/src/apps/mqtt/mqtt.c
+)
+
 # Criar biblioteca estática LwIP
 add_library(lwip_lib STATIC
     ${LWIP_CORE_SRCS}
@@ -263,6 +371,7 @@ add_library(lwip_lib STATIC
     ${LWIP_API_SRCS}
     ${LWIP_NETIF_SRCS}
     ${LWIP_APPS_SRCS}
+    ${LWIP_MQTT_SRCS}
 )
 
 # Incluir diretórios do LwIP
