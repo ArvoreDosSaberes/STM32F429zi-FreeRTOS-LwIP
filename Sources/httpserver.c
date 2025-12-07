@@ -78,7 +78,7 @@ int httpServerInit(void)
     ip4_addr_t netmask;
     ip4_addr_t gateway;
 
-    printf("[HTTP] Inicializando stack TCP/IP...\n");
+    printf("[HTTP] Inicializando stack TCP/IP...\n\r");
 
     /* Inicializar stack TCP/IP com callback */
     tcpip_init(tcpipInitDoneCallback, NULL);
@@ -93,7 +93,7 @@ int httpServerInit(void)
 
     if (!tcpipInitDone)
     {
-        printf("[HTTP] ERRO: Timeout na inicializacao do TCP/IP\n");
+        printf("[HTTP] ERRO: Timeout na inicializacao do TCP/IP\n\r");
         return -1;
     }
 
@@ -102,13 +102,13 @@ int httpServerInit(void)
     IP4_ADDR(&netmask, 0, 0, 0, 0);
     IP4_ADDR(&gateway, 0, 0, 0, 0);
 
-    printf("[HTTP] Adicionando interface de rede...\n");
+    printf("[HTTP] Adicionando interface de rede...\n\r");
 
     /* Adicionar interface de rede */
     if (netif_add(&httpNetif, &ipaddr, &netmask, &gateway,
                   NULL, ethernetIfInit, tcpip_input) == NULL)
     {
-        printf("[HTTP] ERRO: Falha ao adicionar netif\n");
+        printf("[HTTP] ERRO: Falha ao adicionar netif\n\r");
         return -1;
     }
 
@@ -127,21 +127,21 @@ int httpServerInit(void)
     /* Ativar interface */
     netif_set_up(&httpNetif);
 
-    printf("[HTTP] Interface de rede configurada\n");
+    printf("[HTTP] Interface de rede configurada\n\r");
 
     /* Só iniciar DHCP se o link estiver ativo */
     if (netif_is_link_up(&httpNetif))
     {
-        printf("[HTTP] Link ativo, iniciando DHCP...\n");
+        printf("[HTTP] Link ativo, iniciando DHCP...\n\r");
         err_t dhcpErr = dhcp_start(&httpNetif);
         if (dhcpErr != ERR_OK)
         {
-            printf("[HTTP] ERRO: dhcp_start() retornou %d\n", dhcpErr);
+            printf("[HTTP] ERRO: dhcp_start() retornou %d\n\r", dhcpErr);
         }
     }
     else
     {
-        printf("[HTTP] AVISO: Link inativo, DHCP sera iniciado quando o link subir\n");
+        printf("[HTTP] AVISO: Link inativo, DHCP sera iniciado quando o link subir\n\r");
     }
 
     /* Criar tarefa para monitorar DHCP */
@@ -155,12 +155,9 @@ int httpServerInit(void)
     /* Inicializar servidor HTTP */
     httpd_init();
 
-    /* Registrar sistema de arquivos customizado */
-    webpagesRegister();
-
     networkInitialized = 1;
 
-    printf("[HTTP] Servidor HTTP inicializado\n");
+    printf("[HTTP] Servidor HTTP inicializado\n\r");
 
     return 0;
 }
@@ -234,7 +231,7 @@ static void networkStatusCallback(struct netif *netif)
         const ip4_addr_t *ip = netif_ip4_addr(netif);
         
         /* Log do IP obtido (pode ser redirecionado para UART) */
-        printf("Network up: %d.%d.%d.%d\n",
+        printf("Network up: %d.%d.%d.%d\n\r",
                (int)(ip->addr & 0xFF),
                (int)((ip->addr >> 8) & 0xFF),
                (int)((ip->addr >> 16) & 0xFF),
@@ -242,7 +239,7 @@ static void networkStatusCallback(struct netif *netif)
     }
     else
     {
-        printf("Network down\n");
+        printf("Network down\n\r");
     }
 }
 
@@ -255,11 +252,11 @@ static void networkLinkCallback(struct netif *netif)
 {
     if (netif_is_link_up(netif))
     {
-        printf("Ethernet link up\n");
+        printf("Ethernet link up\n\r");
     }
     else
     {
-        printf("Ethernet link down\n");
+        printf("Ethernet link down\n\r");
     }
 }
 
@@ -282,7 +279,7 @@ static void dhcpClientTask(void *pvParameters)
     /* Aguardar um pouco antes de começar */
     vTaskDelay(pdMS_TO_TICKS(500));
 
-    printf("[DHCP] Tarefa de monitoramento iniciada\n");
+    printf("[DHCP] Tarefa de monitoramento iniciada\n\r");
 
     for (;;)
     {
@@ -297,7 +294,7 @@ static void dhcpClientTask(void *pvParameters)
 
             if (currentLinkState)
             {
-                printf("[DHCP] Link ativo - iniciando cliente DHCP\n");
+                printf("[DHCP] Link ativo - iniciando cliente DHCP\n\r");
                 dhcp_start(&httpNetif);
                 dhcpStarted = 1;
                 dhcpWaitCounter = 0;
@@ -305,7 +302,7 @@ static void dhcpClientTask(void *pvParameters)
             }
             else
             {
-                printf("[DHCP] Link perdido - parando DHCP\n");
+                printf("[DHCP] Link perdido - parando DHCP\n\r");
                 dhcp_stop(&httpNetif);
                 dhcpStarted = 0;
                 ipObtained = 0;
@@ -321,21 +318,21 @@ static void dhcpClientTask(void *pvParameters)
             {
                 /* IP obtido pela primeira vez */
                 ipObtained = 1;
-                printf("[DHCP] IP obtido: %d.%d.%d.%d\n",
+                printf("[DHCP] IP obtido: %d.%d.%d.%d\n\r",
                        (int)(ip->addr & 0xFF),
                        (int)((ip->addr >> 8) & 0xFF),
                        (int)((ip->addr >> 16) & 0xFF),
                        (int)((ip->addr >> 24) & 0xFF));
 
                 const ip4_addr_t *gw = netif_ip4_gw(&httpNetif);
-                printf("[DHCP] Gateway: %d.%d.%d.%d\n",
+                printf("[DHCP] Gateway: %d.%d.%d.%d\n\r",
                        (int)(gw->addr & 0xFF),
                        (int)((gw->addr >> 8) & 0xFF),
                        (int)((gw->addr >> 16) & 0xFF),
                        (int)((gw->addr >> 24) & 0xFF));
 
                 const ip4_addr_t *nm = netif_ip4_netmask(&httpNetif);
-                printf("[DHCP] Mascara: %d.%d.%d.%d\n",
+                printf("[DHCP] Mascara: %d.%d.%d.%d\n\r",
                        (int)(nm->addr & 0xFF),
                        (int)((nm->addr >> 8) & 0xFF),
                        (int)((nm->addr >> 16) & 0xFF),
@@ -352,19 +349,19 @@ static void dhcpClientTask(void *pvParameters)
                     struct dhcp *dhcpState = netif_dhcp_data(&httpNetif);
                     if (dhcpState != NULL)
                     {
-                        printf("[DHCP] Aguardando IP... (tentativa %d, estado %d)\n",
+                        printf("[DHCP] Aguardando IP... (tentativa %d, estado %d)\n\r",
                                dhcpState->tries, dhcpState->state);
                     }
                     else
                     {
-                        printf("[DHCP] Aguardando IP... (sem estado DHCP)\n");
+                        printf("[DHCP] Aguardando IP... (sem estado DHCP)\n\r");
                     }
                 }
 
                 /* Timeout: 30 segundos sem IP -> usar fallback */
                 if (dhcpWaitCounter > 30)
                 {
-                    printf("[DHCP] Timeout! Usando IP estatico fallback\n");
+                    printf("[DHCP] Timeout! Usando IP estatico fallback\n\r");
 
                     dhcp_stop(&httpNetif);
 
@@ -378,7 +375,7 @@ static void dhcpClientTask(void *pvParameters)
                     dhcpStarted = 0;
                     ipObtained = 1;
 
-                    printf("[DHCP] IP fallback: 192.168.1.100\n");
+                    printf("[DHCP] IP fallback: 192.168.1.100\n\r");
                 }
             }
         }

@@ -114,13 +114,13 @@ err_t ethernetIfInit(struct netif *netif)
 
     if (ethernetIfInitPhy() != 0)
     {
-        printf("[EthIf] AVISO: PHY nao respondeu corretamente\n");
+        printf("[EthIf] AVISO: PHY nao respondeu corretamente\n\r");
     }
 
     rxSemaphore = xSemaphoreCreateBinary();
     if (rxSemaphore == NULL)
     {
-        printf("[EthIf] ERRO: Falha ao criar semaforo\n");
+        printf("[EthIf] ERRO: Falha ao criar semaforo\n\r");
         return ERR_MEM;
     }
 
@@ -133,7 +133,7 @@ err_t ethernetIfInit(struct netif *netif)
 
     if (result != pdPASS)
     {
-        printf("[EthIf] ERRO: Falha ao criar tarefa\n");
+        printf("[EthIf] ERRO: Falha ao criar tarefa\n\r");
         return ERR_MEM;
     }
 
@@ -142,7 +142,7 @@ err_t ethernetIfInit(struct netif *netif)
 
     HAL_ETH_Start(&heth);
 
-    printf("[EthIf] Aguardando link...\n");
+    printf("[EthIf] Aguardando link...\n\r");
 
     /* Aguardar até 3 segundos pelo link */
     uint32_t startTick = HAL_GetTick();
@@ -167,14 +167,14 @@ err_t ethernetIfInit(struct netif *netif)
         ethLinkUp = 1;
         netif->flags |= NETIF_FLAG_LINK_UP;
         netif_set_link_up(netif);
-        printf("[EthIf] Link detectado!\n");
+        printf("[EthIf] Link detectado!\n\r");
     }
     else
     {
         ethLinkUp = 0;
         netif->flags &= ~NETIF_FLAG_LINK_UP;
         netif_set_link_down(netif);
-        printf("[EthIf] AVISO: Link nao detectado (verifique o cabo)\n");
+        printf("[EthIf] AVISO: Link nao detectado (verifique o cabo)\n\r");
     }
 
     return ERR_OK;
@@ -214,7 +214,7 @@ static void ethernetIfMspInit(void)
     HAL_NVIC_SetPriority(ETH_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(ETH_IRQn);
 
-    printf("[EthIf] MSP inicializado\n");
+    printf("[EthIf] MSP inicializado\n\r");
 }
 
 static void ethernetIfInitMac(void)
@@ -231,7 +231,7 @@ static void ethernetIfInitMac(void)
 
     if (HAL_ETH_Init(&heth) != HAL_OK)
     {
-        printf("[EthIf] ERRO: HAL_ETH_Init falhou\n");
+        printf("[EthIf] ERRO: HAL_ETH_Init falhou\n\r");
         return;
     }
 
@@ -248,11 +248,11 @@ static int ethernetIfInitPhy(void)
     uint32_t phyReg;
     uint32_t timeout;
 
-    printf("[EthIf] Inicializando PHY...\n");
+    printf("[EthIf] Inicializando PHY...\n\r");
 
     if (HAL_ETH_WritePHYRegister(&heth, PHY_BCR, PHY_BCR_SOFT_RESET) != HAL_OK)
     {
-        printf("[EthIf] ERRO: Falha ao resetar PHY\n");
+        printf("[EthIf] ERRO: Falha ao resetar PHY\n\r");
         return -1;
     }
 
@@ -268,20 +268,20 @@ static int ethernetIfInitPhy(void)
 
     if (phyReg & PHY_BCR_SOFT_RESET)
     {
-        printf("[EthIf] ERRO: Timeout no reset do PHY\n");
+        printf("[EthIf] ERRO: Timeout no reset do PHY\n\r");
         return -1;
     }
 
-    printf("[EthIf] PHY resetado\n");
+    printf("[EthIf] PHY resetado\n\r");
 
     if (HAL_ETH_WritePHYRegister(&heth, PHY_BCR,
                                   PHY_BCR_AUTONEG_EN | PHY_BCR_AUTONEG_RESTART) != HAL_OK)
     {
-        printf("[EthIf] ERRO: Falha ao iniciar auto-negociacao\n");
+        printf("[EthIf] ERRO: Falha ao iniciar auto-negociacao\n\r");
         return -1;
     }
 
-    printf("[EthIf] Auto-negociacao iniciada\n");
+    printf("[EthIf] Auto-negociacao iniciada\n\r");
 
     timeout = HAL_GetTick() + PHY_TIMEOUT_MS;
     do
@@ -307,26 +307,26 @@ static int ethernetIfInitPhy(void)
                 switch (phyReg & PHY_SPEED_MASK)
                 {
                     case PHY_SPEED_100FD:
-                        printf("[EthIf] Velocidade: 100 Mbps Full Duplex\n");
+                        printf("[EthIf] Velocidade: 100 Mbps Full Duplex\n\r");
                         break;
                     case PHY_SPEED_100HD:
-                        printf("[EthIf] Velocidade: 100 Mbps Half Duplex\n");
+                        printf("[EthIf] Velocidade: 100 Mbps Half Duplex\n\r");
                         break;
                     case PHY_SPEED_10FD:
-                        printf("[EthIf] Velocidade: 10 Mbps Full Duplex\n");
+                        printf("[EthIf] Velocidade: 10 Mbps Full Duplex\n\r");
                         break;
                     case PHY_SPEED_10HD:
-                        printf("[EthIf] Velocidade: 10 Mbps Half Duplex\n");
+                        printf("[EthIf] Velocidade: 10 Mbps Half Duplex\n\r");
                         break;
                     default:
-                        printf("[EthIf] Velocidade desconhecida\n");
+                        printf("[EthIf] Velocidade desconhecida\n\r");
                         break;
                 }
             }
         }
         else
         {
-            printf("[EthIf] Link nao detectado\n");
+            printf("[EthIf] Link nao detectado\n\r");
         }
     }
 
@@ -511,13 +511,13 @@ static void ethernetIfTask(void *pvParameters)
                 {
                     ethLinkUp = 1;
                     netif_set_link_up(ethNetif);
-                    printf("[EthIf] Link estabelecido\n");
+                    printf("[EthIf] Link estabelecido\n\r");
                 }
                 else if (!(phyReg & PHY_BSR_LINK_STATUS) && ethLinkUp)
                 {
                     ethLinkUp = 0;
                     netif_set_link_down(ethNetif);
-                    printf("[EthIf] Link perdido\n");
+                    printf("[EthIf] Link perdido\n\r");
                 }
             }
         }

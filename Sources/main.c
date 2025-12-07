@@ -49,7 +49,7 @@ static void appMonitorTask(void *pvParameters);
 
 /**
  * @brief Função principal do sistema.
- *
+ *7
  * Inicializa o hardware, cria as tarefas do FreeRTOS e inicia o escalonador.
  * Esta função nunca retorna em operação normal.
  *
@@ -109,11 +109,11 @@ static void systemHardwareInit(void)
     uart3Init();
 
     /* Agora testar printf */
-    printf("\n=== Sistema inicializado ===\n");
-    printf("SYSCLK: %lu Hz\n", HAL_RCC_GetSysClockFreq());
-    printf("HCLK:   %lu Hz\n", HAL_RCC_GetHCLKFreq());
-    printf("PCLK1:  %lu Hz\n", HAL_RCC_GetPCLK1Freq());
-    printf("PCLK2:  %lu Hz\n", HAL_RCC_GetPCLK2Freq());
+    printf("\n\r=== Sistema inicializado ===\n\r");
+    printf("SYSCLK: %lu Hz\n\r", HAL_RCC_GetSysClockFreq());
+    printf("HCLK:   %lu Hz\n\r", HAL_RCC_GetHCLKFreq());
+    printf("PCLK1:  %lu Hz\n\r", HAL_RCC_GetPCLK1Freq());
+    printf("PCLK2:  %lu Hz\n\r", HAL_RCC_GetPCLK2Freq());
 }
 
 /*-----------------------------------------------------------------------------
@@ -138,12 +138,12 @@ static void appMainTask(void *pvParameters)
     vTaskDelay(pdMS_TO_TICKS(100));
 
     /* Inicializar servidor HTTP */
-    printf("\n=== STM32F429ZI HTTP Server ===\n");
-    printf("Inicializando stack de rede...\n");
+    printf("\n\r=== STM32F429ZI HTTP Server ===\n\r");
+    printf("Inicializando stack de rede...\n\r");
 
     if (httpServerInit() != 0)
     {
-        printf("ERRO: Falha ao inicializar servidor HTTP!\n");
+        printf("ERRO: Falha ao inicializar servidor HTTP!\n\r");
         
         /* Loop de erro */
         for (;;)
@@ -152,15 +152,15 @@ static void appMainTask(void *pvParameters)
         }
     }
 
-    printf("Servidor HTTP inicializado com sucesso!\n");
-    printf("Aguardando IP via DHCP...\n");
+    printf("Servidor HTTP inicializado com sucesso!\n\r");
+    printf("Aguardando IP via DHCP...\n\r");
 
     /* Loop principal - monitorar estado da rede */
     for (;;)
     {
         if (httpServerGetIpAddress(ipBuffer))
         {
-            printf("Servidor disponivel em: http://%s/\n", ipBuffer);
+            printf("Servidor disponivel em: http://%s/\n\r", ipBuffer);
         }
 
         /* Verificar estado da conexão a cada 5 segundos */
@@ -187,7 +187,7 @@ static void appMonitorTask(void *pvParameters)
         size_t minFreeHeap = xPortGetMinimumEverFreeHeapSize();
 
         /* Log periódico de status (a cada 30 segundos) */
-        printf("[Monitor] Heap livre: %u bytes, Minimo: %u bytes\n",
+        printf("[Monitor] Heap livre: %u bytes, Minimo: %u bytes\n\r",
                (unsigned int)freeHeap, (unsigned int)minFreeHeap);
 
         vTaskDelay(pdMS_TO_TICKS(30000));

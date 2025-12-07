@@ -12,6 +12,7 @@
 #include "webpages.h"
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
 /*-----------------------------------------------------------------------------
  * Definições de Páginas HTML
@@ -365,8 +366,8 @@ typedef struct
  */
 static const WebFile_t webFiles[] =
 {
-    { "",            indexHtml,    sizeof(indexHtml) - 1,    "text/html" },
     { "/",           indexHtml,    sizeof(indexHtml) - 1,    "text/html" },
+    { "/index.shtml",indexHtml,    sizeof(indexHtml) - 1,    "text/html" },
     { "/index.html", indexHtml,    sizeof(indexHtml) - 1,    "text/html" },
     { "/index.htm",  indexHtml,    sizeof(indexHtml) - 1,    "text/html" },
     { "/404.html",   error404Html, sizeof(error404Html) - 1, "text/html" },
@@ -378,21 +379,6 @@ static const WebFile_t webFiles[] =
  *----------------------------------------------------------------------------*/
 
 /**
- * @brief Registra as páginas web no servidor HTTP do LwIP.
- *
- * Esta função configura o sistema de arquivos customizado para
- * que o httpd do LwIP possa servir as páginas embarcadas.
- */
-void webpagesRegister(void)
-{
-    /* 
-     * NOTA: O LwIP httpd usa funções de callback para acessar arquivos.
-     * As funções fs_open, fs_read e fs_close são implementadas abaixo
-     * e linkadas automaticamente pelo linker.
-     */
-}
-
-/**
  * @brief Busca um arquivo pelo nome.
  *
  * @param name Nome do arquivo a buscar.
@@ -400,6 +386,7 @@ void webpagesRegister(void)
  */
 static const WebFile_t *findFile(const char *name)
 {
+    printf("[HTTP] Busca arquivo que tem o nome %s\n\r", name);
     for (int i = 0; webFiles[i].name != NULL; i++)
     {
         if (strcmp(webFiles[i].name, name) == 0)
