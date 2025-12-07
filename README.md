@@ -10,20 +10,25 @@
 [![GitHub Stars](https://img.shields.io/github/stars/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP?style=social)](https://github.com/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP)
 [![GitHub Issues](https://img.shields.io/github/issues/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP)](https://github.com/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP/issues)
 
-## Sobre o Projeto
+O projeto tem como objetivo **ensinar e facilitar o desenvolvimento** com microcontroladores da família STM32 em especial o STM32F411zi. Oferecemos à comunidade templates prontos para uso, permitindo que desenvolvedores deem os primeiros passos de forma rápida e eficiente.
 
-Este projeto tem como objetivo **ensinar e facilitar o desenvolvimento** com microcontroladores da família STM32, especificamente o **STM32F429ZI**.
 
 Oferecemos à comunidade **templates prontos para uso**, permitindo que desenvolvedores deem os primeiros passos com o STM32 de forma rápida e eficiente, sem a necessidade de configurar tudo do zero.
 
+
+### Links
+
+- **GitHub**: https://github.com/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP
+- **Site**: https://mcu.tec.br
+- **YouTube**: https://youtube.com/@mcu_fpga
 ### Recursos Principais
 
-| Recurso | Descrição |
-|---------|----------|
-| ⚙️ **FreeRTOS v11.2** | Sistema operacional de tempo real para gerenciamento de tarefas e recursos |
-| 🌐 **LwIP v2.2** | Pilha TCP/IP leve e eficiente para conectividade Ethernet |
-| 📡 **Servidor HTTP** | Servidor web integrado para monitoramento e configuração |
-| 📚 **Código Documentado** | Comentários detalhados e tutoriais para facilitar o aprendizado |
+| Recurso                         | Descrição                                                                |
+| ------------------------------- | -------------------------------------------------------------------------- |
+| ⚙️**FreeRTOS v11.2**    | Sistema operacional de tempo real para gerenciamento de tarefas e recursos |
+| 🌐**LwIP v2.2**           | Pilha TCP/IP leve e eficiente para conectividade Ethernet                  |
+| 📡**Servidor HTTP**       | Servidor web integrado para monitoramento e configuração                 |
+| 📚**Código Documentado** | Comentários detalhados e tutoriais para facilitar o aprendizado           |
 
 ### Especificações Técnicas
 
@@ -47,24 +52,6 @@ Este documento explica, passo a passo, como:
 > Ambiente considerado: Linux, toolchain ARM (`arm-none-eabi-*`) já instalada, OpenOCD e ST-Link tools instalados.
 
 ---
-
-## Sobre o Projeto
-
-Este projeto é um **template para desenvolvimento** com o microcontrolador STM32F429ZI, integrando:
-
-- **FreeRTOS v11.2**: Sistema operacional de tempo real
-- **LwIP v2.2**: Pilha TCP/IP leve para conectividade Ethernet
-- **Servidor HTTP**: Servidor web integrado com páginas embarcadas
-
-### Objetivo
-
-O projeto tem como objetivo **ensinar e facilitar o desenvolvimento** com microcontroladores da família STM32. Oferecemos à comunidade templates prontos para uso, permitindo que desenvolvedores deem os primeiros passos de forma rápida e eficiente.
-
-### Links
-
-- **GitHub**: https://github.com/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP
-- **Site**: https://mcu.tec.br
-- **YouTube**: https://youtube.com/@mcu_fpga
 
 ### Documentação Adicional
 
@@ -167,11 +154,7 @@ Na pasta `Debug/`:
 st-flash write STM32-F429zi-http.bin 0x08000000
 ```
 
-Se tudo der certo, a saída termina com algo como:
-
-```text
-Flash written and verified! jolly good!
-```
+Se tudo der certo, a saída termina com algo como:Flash written and verified! jolly good!
 
 A placa então começa a executar o firmware gravado.
 
@@ -255,25 +238,21 @@ A execução para na **primeira linha** da função `main`.
   ```gdb
   break appTask1
   ```
-
 - Breakpoint em uma linha do arquivo:
 
   ```gdb
   break Sources/main.c:65
   ```
-
 - Listar breakpoints ativos:
 
   ```gdb
   info breakpoints
   ```
-
 - Remover um breakpoint específico (por número):
 
   ```gdb
   delete 1
   ```
-
 - Remover todos os breakpoints:
 
   ```gdb
@@ -287,25 +266,21 @@ A execução para na **primeira linha** da função `main`.
   ```gdb
   continue    # ou 'c'
   ```
-
 - Executar a **próxima linha**, entrando em funções:
 
   ```gdb
   step        # ou 's'
   ```
-
 - Executar a **próxima linha**, sem entrar em funções chamadas:
 
   ```gdb
   next        # ou 'n'
   ```
-
 - Sair da função atual, continuando até o retorno:
 
   ```gdb
   finish
   ```
-
 - Rodar novamente desde o início (útil após reset manual):
 
   ```gdb
@@ -319,25 +294,21 @@ A execução para na **primeira linha** da função `main`.
   ```gdb
   print variavel
   ```
-
 - Imprimir em formato hexadecimal:
 
   ```gdb
   print/x variavel
   ```
-
 - Examinar memória (por exemplo, 10 words de 32 bits a partir de um endereço):
 
   ```gdb
   x/10wx 0x20000000
   ```
-
 - Ver registradores:
 
   ```gdb
   info registers
   ```
-
 - Ver apenas um registrador:
 
   ```gdb
@@ -370,7 +341,6 @@ frame 1       # frame anterior
    ```bash
    openocd -f interface/stlink.cfg -f target/stm32f4x.cfg
    ```
-
 2. **Terminal 2 – GDB**
 
    ```bash
@@ -386,45 +356,44 @@ frame 1       # frame anterior
    break main                 # breakpoint em main
    continue                   # roda até chegar em main
    ```
-
 3. A partir daí, use `next`, `step`, `print`, etc., para depurar.
 
 ---
 
 ## 6. Tabela de comandos úteis do GDB
 
-| Comando                            | Descrição                                                                                     | Exemplo                                                |
-|------------------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------|
-| `target remote HOST:PORT`         | Conecta a um servidor GDB remoto (OpenOCD, st-util, etc.).                                   | `target remote :3333`                                 |
-| `monitor <cmd>`                   | Envia um comando direto ao servidor (OpenOCD).                                               | `monitor reset halt`                                  |
-| `break <func>`                    | Cria breakpoint no início de uma função.                                                     | `break main`                                          |
-| `break <file>:<linha>`           | Cria breakpoint em uma linha específica de um arquivo.                                       | `break Sources/main.c:65`                             |
-| `tbreak ...`                      | Breakpoint temporário (é apagado após ser atingido).                                         | `tbreak main`                                         |
-| `delete <n>`                      | Remove o breakpoint de número `n`.                                                           | `delete 1`                                            |
-| `delete breakpoints`             | Remove todos os breakpoints.                                                                 | `delete breakpoints`                                  |
-| `disable <n>`                     | Desativa breakpoint sem removê-lo.                                                           | `disable 1`                                           |
-| `enable <n>`                      | Reativa breakpoint desativado.                                                               | `enable 1`                                            |
-| `info breakpoints`               | Lista todos os breakpoints.                                                                  | `info breakpoints`                                    |
-| `continue` / `c`                 | Continua a execução até próximo breakpoint ou término.                                       | `continue`                                            |
-| `step` / `s`                     | Executa próxima linha, **entrando** em funções chamadas.                                     | `step`                                                |
-| `next` / `n`                     | Executa próxima linha, **sem entrar** em funções chamadas.                                   | `next`                                                |
-| `finish`                         | Continua a execução até a função atual retornar.                                             | `finish`                                              |
-| `run`                            | Inicia ou reinicia o programa (mais comum em programas host, menos em bare-metal).          | `run`                                                 |
-| `interrupt` ou `Ctrl+C`          | Interrompe a execução do programa em qualquer ponto.                                        | `Ctrl+C` no GDB                                       |
-| `print <expr>` / `p <expr>`      | Avalia e imprime uma expressão (variáveis, ponteiros, etc.).                                | `print x`, `print myStruct.field`                     |
-| `print/x <expr>`                 | Imprime o valor em hexadecimal.                                                              | `print/x 0x20000000`                                  |
-| `set var <nome> = <valor>`       | Altera o valor de uma variável em tempo de execução.                                         | `set var counter = 0`                                 |
-| `x/<N><formato><tamanho> <addr>` | Examina memória. `<N>` = quantidade, `<formato>` = x, d, u, etc., `<tamanho>` = b, h, w, g. | `x/10wx 0x20000000`                                   |
-| `info registers`                 | Mostra todos os registradores da CPU.                                                        | `info registers`                                      |
-| `info registers pc`              | Mostra apenas o registrador `pc` (program counter).                                          | `info registers pc`                                   |
-| `backtrace` / `bt`               | Mostra a pilha de chamadas (stack trace).                                                    | `backtrace`                                           |
-| `frame <n>`                      | Seleciona um frame específico da pilha para inspeção.                                        | `frame 1`                                             |
-| `info locals`                    | Mostra variáveis locais do frame atual.                                                      | `info locals`                                         |
-| `info args`                      | Mostra argumentos da função atual.                                                           | `info args`                                           |
-| `display <expr>`                 | Passa a mostrar automaticamente o valor de uma expressão a cada parada.                     | `display myVar`                                       |
-| `undisplay <n>`                  | Remove um item da lista de display automático.                                               | `undisplay 1`                                         |
-| `set logging on`                | Liga o log de saída do GDB para um arquivo.                                                  | `set logging on`                                      |
-| `quit` / `q`                     | Encerra o GDB (perguntará se deve desconectar do alvo).                                      | `quit`                                                |
+| Comando                            | Descrição                                                                                       | Exemplo                               |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `target remote HOST:PORT`        | Conecta a um servidor GDB remoto (OpenOCD, st-util, etc.).                                        | `target remote :3333`               |
+| `monitor <cmd>`                  | Envia um comando direto ao servidor (OpenOCD).                                                    | `monitor reset halt`                |
+| `break <func>`                   | Cria breakpoint no início de uma função.                                                       | `break main`                        |
+| `break <file>:<linha>`           | Cria breakpoint em uma linha específica de um arquivo.                                           | `break Sources/main.c:65`           |
+| `tbreak ...`                     | Breakpoint temporário (é apagado após ser atingido).                                           | `tbreak main`                       |
+| `delete <n>`                     | Remove o breakpoint de número `n`.                                                             | `delete 1`                          |
+| `delete breakpoints`             | Remove todos os breakpoints.                                                                      | `delete breakpoints`                |
+| `disable <n>`                    | Desativa breakpoint sem removê-lo.                                                               | `disable 1`                         |
+| `enable <n>`                     | Reativa breakpoint desativado.                                                                    | `enable 1`                          |
+| `info breakpoints`               | Lista todos os breakpoints.                                                                       | `info breakpoints`                  |
+| `continue` / `c`               | Continua a execução até próximo breakpoint ou término.                                       | `continue`                          |
+| `step` / `s`                   | Executa próxima linha,**entrando** em funções chamadas.                                  | `step`                              |
+| `next` / `n`                   | Executa próxima linha,**sem entrar** em funções chamadas.                                | `next`                              |
+| `finish`                         | Continua a execução até a função atual retornar.                                             | `finish`                            |
+| `run`                            | Inicia ou reinicia o programa (mais comum em programas host, menos em bare-metal).                | `run`                               |
+| `interrupt` ou `Ctrl+C`        | Interrompe a execução do programa em qualquer ponto.                                            | `Ctrl+C` no GDB                     |
+| `print <expr>` / `p <expr>`    | Avalia e imprime uma expressão (variáveis, ponteiros, etc.).                                    | `print x`, `print myStruct.field` |
+| `print/x <expr>`                 | Imprime o valor em hexadecimal.                                                                   | `print/x 0x20000000`                |
+| `set var <nome> = <valor>`       | Altera o valor de uma variável em tempo de execução.                                           | `set var counter = 0`               |
+| `x/<N><formato><tamanho> <addr>` | Examina memória.`<N>` = quantidade, `<formato>` = x, d, u, etc., `<tamanho>` = b, h, w, g. | `x/10wx 0x20000000`                 |
+| `info registers`                 | Mostra todos os registradores da CPU.                                                             | `info registers`                    |
+| `info registers pc`              | Mostra apenas o registrador `pc` (program counter).                                             | `info registers pc`                 |
+| `backtrace` / `bt`             | Mostra a pilha de chamadas (stack trace).                                                         | `backtrace`                         |
+| `frame <n>`                      | Seleciona um frame específico da pilha para inspeção.                                          | `frame 1`                           |
+| `info locals`                    | Mostra variáveis locais do frame atual.                                                          | `info locals`                       |
+| `info args`                      | Mostra argumentos da função atual.                                                              | `info args`                         |
+| `display <expr>`                 | Passa a mostrar automaticamente o valor de uma expressão a cada parada.                          | `display myVar`                     |
+| `undisplay <n>`                  | Remove um item da lista de display automático.                                                   | `undisplay 1`                       |
+| `set logging on`                 | Liga o log de saída do GDB para um arquivo.                                                      | `set logging on`                    |
+| `quit` / `q`                   | Encerra o GDB (perguntará se deve desconectar do alvo).                                          | `quit`                              |
 
 ---
 
@@ -435,19 +404,16 @@ frame 1       # frame anterior
   ```gdb
   monitor reset halt
   ```
-
 - Para depurar FreeRTOS:
 
   - Coloque breakpoints nas tarefas (`appMainTask`, `appMonitorTask`, `dhcpClientTask`) e em callbacks de erro (`vApplicationMallocFailedHook`, `vApplicationStackOverflowHook`).
   - Use `backtrace` quando cair em um hook para ver quem chamou.
-
 - Para verificar o uso de memória:
 
   ```gdb
   print xPortGetFreeHeapSize()
   print xPortGetMinimumEverFreeHeapSize()
   ```
-
 - Se tiver problemas de conexão:
 
   - Verifique se o OpenOCD ainda está rodando no Terminal 1.
@@ -463,26 +429,26 @@ Este documento pode ser expandido com mais exemplos específicos do projeto (uso
 
 ### Arquivos Principais
 
-| Arquivo | Descrição |
-|---------|----------|
-| `main.c` | Função principal, criação de tarefas FreeRTOS |
-| `httpserver.c/h` | Inicialização do servidor HTTP e cliente DHCP |
-| `webpages.c/h` | Páginas HTML embarcadas e funções fs_*_custom |
-| `ethernetif.c/h` | Driver Ethernet para LwIP |
-| `eth_hardware.c` | Inicialização do hardware Ethernet e PHY |
-| `sys_arch.c` | Interface FreeRTOS-LwIP (semáforos, threads) |
-| `system_config.c/h` | Configuração de clocks (180 MHz) e UART3 |
-| `syscalls.c` | Syscalls para newlib (redirecionamento printf) |
-| `sysmem.c` | Gerenciamento de heap para newlib |
+| Arquivo               | Descrição                                       |
+| --------------------- | ------------------------------------------------- |
+| `main.c`            | Função principal, criação de tarefas FreeRTOS |
+| `httpserver.c/h`    | Inicialização do servidor HTTP e cliente DHCP   |
+| `webpages.c/h`      | Páginas HTML embarcadas e funções fs_*_custom  |
+| `ethernetif.c/h`    | Driver Ethernet para LwIP                         |
+| `eth_hardware.c`    | Inicialização do hardware Ethernet e PHY        |
+| `sys_arch.c`        | Interface FreeRTOS-LwIP (semáforos, threads)     |
+| `system_config.c/h` | Configuração de clocks (180 MHz) e UART3        |
+| `syscalls.c`        | Syscalls para newlib (redirecionamento printf)    |
+| `sysmem.c`          | Gerenciamento de heap para newlib                 |
 
 ### Tarefas FreeRTOS
 
-| Tarefa | Prioridade | Stack | Descrição |
-|--------|------------|-------|----------|
-| `Main` | 2 | 512 words | Inicialização do servidor HTTP |
-| `Monitor` | 1 | 256 words | Monitoramento de heap |
-| `DHCP` | 2 | 512 words | Cliente DHCP com fallback |
-| `tcpip_thread` | 3 | Configurável | Thread principal do LwIP |
+| Tarefa           | Prioridade | Stack         | Descrição                      |
+| ---------------- | ---------- | ------------- | -------------------------------- |
+| `Main`         | 2          | 512 words     | Inicialização do servidor HTTP |
+| `Monitor`      | 1          | 256 words     | Monitoramento de heap            |
+| `DHCP`         | 2          | 512 words     | Cliente DHCP com fallback        |
+| `tcpip_thread` | 3          | Configurável | Thread principal do LwIP         |
 
 ### Configuração de Hardware
 
