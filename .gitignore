@@ -3,3 +3,7 @@
 .gdbinit
 .project
 Debug
+Release
+CMakeFiles
+CMakeCache.txt
+_deps
