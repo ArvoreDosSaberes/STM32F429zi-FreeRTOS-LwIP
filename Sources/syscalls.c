@@ -21,6 +21,7 @@
  */
 
 /* Includes */
+#include <stdint.h>
 /* Tipos básicos (dev_t, mode_t, uid_t, gid_t, clock_t, etc.) */
 #include <sys/types.h>
 #include <time.h>
@@ -33,6 +34,8 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <sys/times.h>
+#include "FreeRTOS.h"
+#include "task.h"
 
 
 /* Variables */
@@ -177,4 +180,40 @@ int _execve(char *name, char **argv, char **env)
   (void)env;
   errno = ENOMEM;
   return -1;
+}
+
+/*----------------------------------------------------------------------------*/
+/* Suporte básico a gettimeofday/settimeofday                                  */
+/*----------------------------------------------------------------------------*/
+static uint64_t s_epoch_offset_ms = 0;
+static TickType_t s_epoch_tick = 0;
+
+int settimeofday(const struct timeval *tv, const struct timezone *tz)
+{
+  (void)tz;
+  if(tv == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  s_epoch_tick = xTaskGetTickCount();
+  s_epoch_offset_ms = ((uint64_t)tv->tv_sec * 1000ULL) + ((uint64_t)tv->tv_usec / 1000ULL);
+  return 0;
+}
+
+int _gettimeofday(struct timeval *tv, void *tz)
+{
+  (void)tz;
+  if(tv == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  TickType_t now_tick = xTaskGetTickCount();
+  uint64_t elapsed_ms = (uint64_t)(now_tick - s_epoch_tick) * (uint64_t)portTICK_PERIOD_MS;
+  uint64_t now_ms = s_epoch_offset_ms + elapsed_ms;
+
+  tv->tv_sec = (time_t)(now_ms / 1000ULL);
+  tv->tv_usec = (suseconds_t)((now_ms % 1000ULL) * 1000ULL);
+  return 0;
 }

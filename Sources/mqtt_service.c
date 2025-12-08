@@ -30,7 +30,7 @@
  *----------------------------------------------------------------------------*/
 
 /** @brief Tamanho do stack da tarefa MQTT em palavras. */
-#define MQTT_TASK_STACK_SIZE        1024
+#define MQTT_TASK_STACK_SIZE        256
 
 /** @brief Prioridade da tarefa MQTT. */
 #define MQTT_TASK_PRIORITY          (tskIDLE_PRIORITY + 2)

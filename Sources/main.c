@@ -19,6 +19,9 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdbool.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "stm32f4xx_hal.h"
 
@@ -31,6 +34,7 @@
 #include "mqtt_service.h"
 #include "opcua_server.h"
 #include "fan_controller.h"
+#include "lwip/apps/sntp.h"
 
 /*-----------------------------------------------------------------------------
  * Declarações Antecipadas (Forward Declarations)
@@ -47,9 +51,15 @@ static void appMonitorTask(void *pvParameters);
 
 /* Tarefa de serviços de comunicação (rede/protocolo) */
 static void appCommServiceTask(void *pvParameters);
+static void mqttInitTask(void *pvParameters);
+static void opcuaInitTask(void *pvParameters);
 
 /* Callback OPC-UA para comandos do ventilador */
 static void opcuaFanCommandCallback(bool on);
+
+/* Serviço de sincronização NTP/SNTP */
+static void timeSyncInit(void);
+static void timeSyncWaitAndLog(void);
 
 
 /*-----------------------------------------------------------------------------
@@ -236,52 +246,19 @@ static void appCommServiceTask(void *pvParameters)
     }
     
     printf("[MQTTInit] IP obtido: %s\r\n", ipBuffer);
-    printf("[MQTTInit] Iniciando servico MQTT...\r\n");
-    
-    /* Inicializar serviço MQTT */
-    mqttErr = mqttServiceInit();
-    if (mqttErr != MQTT_SERVICE_OK)
-    {
-        printf("[MQTTInit] Erro ao inicializar MQTT: %d\r\n", mqttErr);
-        
-        /* Manter tarefa rodando mas em estado de erro */
-        for (;;)
-        {
-            printf("[MQTTInit] Servico MQTT em estado de erro\r\n");
-            vTaskDelay(pdMS_TO_TICKS(30000));
-        }
-    }
-    
-    /* Iniciar tarefa do serviço MQTT */
-    mqttErr = mqttServiceStart();
-    if (mqttErr != MQTT_SERVICE_OK)
-    {
-        printf("[MQTTInit] Erro ao iniciar tarefa MQTT: %d\r\n", mqttErr);
-        
-        for (;;)
-        {
-            vTaskDelay(pdMS_TO_TICKS(30000));
-        }
-    }
-    
-    printf("[MQTTInit] Servico MQTT iniciado com sucesso!\r\n");
 
-    /* Inicializar servidor OPC-UA após MQTT e rede estarem operacionais */
-    if (opcuaServerInit() == 0)
+    /* Iniciar sincronização de tempo via NTP antes dos demais serviços */
+    timeSyncInit();
+    timeSyncWaitAndLog();
+
+    /* Lançar tasks dedicadas para init MQTT e OPC UA */
+    if (xTaskCreate(mqttInitTask, "MQTTInit", 256, NULL, 2, NULL) != pdPASS)
     {
-        opcuaServerSetFanCallback(opcuaFanCommandCallback);
-        if (opcuaServerStart() == 0)
-        {
-            printf("[MQTTInit] Servidor OPC-UA iniciado com sucesso!\r\n");
-        }
-        else
-        {
-            printf("[MQTTInit] ERRO ao iniciar servidor OPC-UA\r\n");
-        }
+        printf("[MQTTInit] ERRO ao criar task de init MQTT\r\n");
     }
-    else
+    if (xTaskCreate(opcuaInitTask, "OPCUAInit", 24 * 1024, NULL, 2, NULL) != pdPASS)
     {
-        printf("[MQTTInit] ERRO ao inicializar servidor OPC-UA\r\n");
+        printf("[OPCUAInit] ERRO ao criar task de init OPC-UA\r\n");
     }
     
     /* Monitorar status do serviço MQTT periodicamente */
@@ -304,6 +281,57 @@ static void appCommServiceTask(void *pvParameters)
     }
 }
 
+/* Task para inicializar e iniciar o serviço MQTT */
+static void mqttInitTask(void *pvParameters)
+{
+    (void)pvParameters;
+    MqttServiceError mqttErr;
+
+    mqttErr = mqttServiceInit();
+    if (mqttErr != MQTT_SERVICE_OK)
+    {
+        printf("[MQTTInitTask] Erro ao inicializar MQTT: %d\r\n", mqttErr);
+        vTaskDelete(NULL);
+    }
+
+    mqttErr = mqttServiceStart();
+    if (mqttErr != MQTT_SERVICE_OK)
+    {
+        printf("[MQTTInitTask] Erro ao iniciar tarefa MQTT: %d\r\n", mqttErr);
+    }
+    else
+    {
+        printf("[MQTTInitTask] Servico MQTT iniciado com sucesso!\r\n");
+    }
+
+    vTaskDelete(NULL);
+}
+
+/* Task para inicializar e iniciar o servidor OPC-UA */
+static void opcuaInitTask(void *pvParameters)
+{
+    (void)pvParameters;
+
+    if (opcuaServerInit() == 0)
+    {
+        opcuaServerSetFanCallback(opcuaFanCommandCallback);
+        if (opcuaServerStart() == 0)
+        {
+            printf("[OPCUAInitTask] Servidor OPC-UA iniciado com sucesso!\r\n");
+        }
+        else
+        {
+            printf("[OPCUAInitTask] ERRO ao iniciar servidor OPC-UA\r\n");
+        }
+    }
+    else
+    {
+        printf("[OPCUAInitTask] ERRO ao inicializar servidor OPC-UA\r\n");
+    }
+
+    vTaskDelete(NULL);
+}
+
 /**
  * @brief Callback chamado pelo servidor OPC-UA para comandos do ventilador.
  *
@@ -312,6 +340,56 @@ static void appCommServiceTask(void *pvParameters)
 static void opcuaFanCommandCallback(bool on)
 {
     fanControllerSetState(on ? FAN_STATE_ON : FAN_STATE_OFF);
+}
+
+/**
+ * @brief Inicializa o cliente SNTP com servidores NTP públicos.
+ *
+ * Usa modo polling e mantém a atualização periódica (SNTP_UPDATE_DELAY em lwipopts.h).
+ */
+static void timeSyncInit(void)
+{
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_setservername(0, "pool.ntp.org");
+    sntp_setservername(1, "time.google.com");
+    sntp_servermode_dhcp(1); /* usa servidores via DHCP se disponíveis */
+    sntp_init();
+}
+
+/**
+ * @brief Aguarda primeira sincronização e registra o horário obtido.
+ */
+static void timeSyncWaitAndLog(void)
+{
+    /* Valor mínimo aceitável: 2020-01-01 */
+    const time_t minValid = 1577836800;
+    struct timeval tv = {0};
+    int retries = 0;
+
+    while (retries < 10)
+    {
+        gettimeofday(&tv, NULL);
+        if (tv.tv_sec >= minValid)
+        {
+            break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(2000));
+        retries++;
+    }
+
+    time_t now = tv.tv_sec;
+    struct tm tm_now;
+    localtime_r(&now, &tm_now);
+    printf("[Time] SNTP sync %s (retries=%d)\r\n",
+           (tv.tv_sec >= minValid) ? "OK" : "timeout (hora pode ser invalida)",
+           retries);
+    printf("[Time] %04d-%02d-%02d %02d:%02d:%02d\r\n",
+           tm_now.tm_year + 1900,
+           tm_now.tm_mon + 1,
+           tm_now.tm_mday,
+           tm_now.tm_hour,
+           tm_now.tm_min,
+           tm_now.tm_sec);
 }
 
 /*-----------------------------------------------------------

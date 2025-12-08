@@ -87,7 +87,12 @@ int opcuaServerInit(void)
     }
 
     UA_ServerConfig *config = UA_Server_getConfig(opcuaServer);
-    UA_StatusCode cfgStatus = UA_ServerConfig_setMinimal(config, OPCUA_SERVER_PORT, NULL);
+    /* Buffers menores para reduzir uso de heap na inicialização */
+    UA_StatusCode cfgStatus = UA_ServerConfig_setMinimalCustomBuffer(
+        config, OPCUA_SERVER_PORT, NULL,
+        4096, /* sendBuffer */
+        4096  /* recvBuffer */
+    );
     if (cfgStatus != UA_STATUSCODE_GOOD)
     {
         printf("[OPCUA] Erro ao configurar servidor OPC-UA: 0x%08lX\r\n", (unsigned long)cfgStatus);
@@ -265,7 +270,7 @@ int opcuaServerStart(void)
 
     BaseType_t res = xTaskCreate(opcuaServerTask,
                                  "OPCUA",
-                                 1024,
+                                 8 * 1024,
                                  NULL,
                                  2,
                                  NULL);

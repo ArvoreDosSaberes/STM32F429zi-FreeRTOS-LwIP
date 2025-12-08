@@ -409,6 +409,26 @@ extern "C" {
 #define MQTT_CONNECT_TIMOUT             100
 
 /*-----------------------------------------------------------------------------
+ * Configurações SNTP (NTP)
+ *----------------------------------------------------------------------------*/
+/* Permite resolver servidores NTP via DNS */
+#define SNTP_SERVER_DNS                 1
+/* Quantidade de servidores NTP configuráveis */
+#define SNTP_MAX_SERVERS                2
+/* Intervalo de atualização (ms): 1 hora */
+#define SNTP_UPDATE_DELAY               (60 * 60 * 1000)
+
+/* Hook para aplicar horário vindo do SNTP */
+#include <sys/time.h>
+#define SNTP_SET_SYSTEM_TIME(sec)                       \
+    do {                                                \
+        struct timeval tv;                              \
+        tv.tv_sec = (time_t)(sec);                      \
+        tv.tv_usec = 0;                                 \
+        settimeofday(&tv, NULL);                        \
+    } while (0)
+
+/*-----------------------------------------------------------------------------
  * Configurações de Estatísticas
  *----------------------------------------------------------------------------*/
 
