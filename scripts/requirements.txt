@@ -1,5 +1,5 @@
 # =============================================================================
-# Dependências Python para Scripts de Teste MQTT
+# Dependências Python para Scripts de Teste MQTT e OPC-UA Dashboard
 # =============================================================================
 # Instalação: pip install -r requirements.txt
 # =============================================================================
@@ -7,3 +7,18 @@
 # Cliente MQTT para Python
 # https://eclipse.dev/paho/files/paho.mqtt.python/html/index.html
 paho-mqtt>=2.0.0
+
+# =============================================================================
+# Dependências para Dashboard OPC-UA
+# =============================================================================
+
+# Cliente OPC-UA assíncrono para Python
+# https://github.com/FreeOpcUa/opcua-asyncio
+asyncua>=1.0.0
+
+# Framework web leve para o dashboard
+# https://flask.palletsprojects.com/
+flask>=3.0.0
+
+# Biblioteca de gráficos (usado via CDN, mas incluído para compatibilidade)
+# plotly>=5.18.0
