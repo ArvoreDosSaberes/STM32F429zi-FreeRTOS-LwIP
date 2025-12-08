@@ -128,7 +128,6 @@ set (MFLOAT_ABI               "-mfloat-abi=hard")
 set (RUNTIME_LIBRARY          "--specs=nano.specs")
 set (RUNTIME_LIBRARY_SYSCALLS "--specs=nosys.specs")
 
-
 set (PROJECT_SOURCES
 	# LIST SOURCE FILES HERE
 	Startup/startup_stm32f429zitx.s
@@ -143,6 +142,9 @@ set (PROJECT_SOURCES
 	Sources/mqtt_service.c
 	Sources/temperature_sensor.c
 	Sources/fan_controller.c
+	Sources/opcua_server.c
+    Sources/compat/posix_stubs.c
+    Middlewares/Open62541/open62541.c
 	)
 
 set (PROJECT_DEFINES
@@ -168,9 +170,11 @@ set (PROJECT_DEFINES
 
 set (PROJECT_INCLUDES
 	# LIST INCLUDE DIRECTORIES HERE
-    ${CMAKE_CURRENT_SOURCE_DIR}/Sources
-    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/arch
-    )
+	${CMAKE_CURRENT_SOURCE_DIR}/Sources
+	${CMAKE_CURRENT_SOURCE_DIR}/Sources/arch
+	${CMAKE_CURRENT_SOURCE_DIR}/Sources/compat
+    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Open62541
+	)
 
 #############################################################################################################################
 # Configuração do STM32CubeF4 HAL
@@ -189,6 +193,13 @@ if(NOT stm32cubef4_POPULATED)
 endif()
 
 set(STM32CUBEF4_DIR ${stm32cubef4_SOURCE_DIR})
+
+# Headers do HAL/CMSIS disponíveis globalmente (necessários para LwIP/open62541)
+include_directories(
+    ${STM32CUBEF4_DIR}/Drivers/STM32F4xx_HAL_Driver/Inc
+    ${STM32CUBEF4_DIR}/Drivers/CMSIS/Device/ST/STM32F4xx/Include
+    ${STM32CUBEF4_DIR}/Drivers/CMSIS/Include
+)
 
 # Arquivos HAL necessários
 set(STM32_HAL_SRCS
@@ -298,6 +309,14 @@ endif()
 # Criar biblioteca LwIP
 set(LWIP_DIR ${lwip_SOURCE_DIR})
 
+# Disponibiliza os headers da LwIP para todos os alvos (inclusive o open62541)
+include_directories(
+    ${LWIP_DIR}/src/include
+    ${LWIP_DIR}/src/include/lwip/apps
+    ${freertos_SOURCE_DIR}/include
+    ${freertos_SOURCE_DIR}/portable/GCC/ARM_CM4F
+)
+
 # Arquivos fonte do core LwIP
 set(LWIP_CORE_SRCS
     ${LWIP_DIR}/src/core/init.c
@@ -392,15 +411,92 @@ target_compile_definitions(lwip_lib PUBLIC
     LWIP_DEBUG=0
 )
 
-# Linkar LwIP ao projeto
-target_link_libraries(${PROJECT_NAME} lwip_lib)
+#############################################################################################################################
+# Configuração do open62541 (Servidor OPC-UA) - geração automática do single-file
+#############################################################################################################################
+# Não precisa mais pois foi gerado o c/h em almagamado e está na pasta Middlewares/Open62541
+#FetchContent_Declare(open62541
+#  GIT_REPOSITORY https://github.com/open62541/open62541.git
+#  GIT_TAG v1.4.9
+#  GIT_SHALLOW TRUE
+#  GIT_PROGRESS TRUE
+#)
 
-# Linkar STM32 HAL ao projeto
-target_link_libraries(${PROJECT_NAME} stm32_hal)
+#FetchContent_GetProperties(open62541)
+#if(NOT open62541_POPULATED)
+#  FetchContent_Populate(open62541)
+#endif()
+
+# Configuração da arquitetura do open62541 para FreeRTOS + LwIP (STM32F4)
+set(UA_ARCHITECTURE "freertosLWIP" CACHE STRING "")
+set(UA_NAMESPACE_ZERO "MINIMAL" CACHE STRING "")
+set(UA_ENABLE_SUBSCRIPTIONS "OFF" CACHE BOOL "" FORCE)
+set(UA_ENABLE_METHODCALLS "OFF" CACHE BOOL "" FORCE)
+set(UA_ENABLE_HISTORIZING "OFF" CACHE BOOL "" FORCE)
+set(UA_ENABLE_SUBSCRIPTIONS_EVENTS "OFF" CACHE BOOL "" FORCE)
+set(UA_ENABLE_AMALGAMATION ON CACHE BOOL "Enable open62541 single-file generation" FORCE)
+set(CMAKE_BUILD_TYPE "Release" CACHE STRING "")
+set(UA_ENABLE_AMALGAMATION ON CACHE BOOL "")
+set(UA_ENABLE_ENCRYPTION OFF CACHE BOOL "")
+set(UA_MULTITHREADING 0 CACHE BOOL "")
+# Desabilitar funcionalidades que dependem de stack POSIX completa
+set(UA_ENABLE_DISCOVERY "OFF" CACHE BOOL "" FORCE)
+set(UA_ENABLE_DISCOVERY_MULTICAST "OFF" CACHE BOOL "" FORCE)
+set(UA_ENABLE_PUBSUB "OFF" CACHE BOOL "" FORCE)
+set(UA_ENABLE_PUBSUB_INFORMATIONMODEL "OFF" CACHE BOOL "" FORCE)
+set(UA_ENABLE_PUBSUB_UDP "OFF" CACHE BOOL "" FORCE)
+set(UA_ENABLE_WEBSOCKET_SERVER "OFF" CACHE BOOL "" FORCE)
+set(UA_ENABLE_EVENTLOOP "OFF" CACHE BOOL "" FORCE)
+
+# Incluir diretório de headers de compatibilidade (arpa/inet.h, netinet/in.h)
+# também para o subprojeto open62541, garantindo que a build interna use os
+# mesmos headers mínimos de rede do firmware.
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Sources/compat)
+
+# Adicionar o subdiretório do open62541 e usar diretamente a biblioteca
+# gerada (target open62541) em vez de copiar o single-file para a árvore
+# do firmware.
+# Não precisa mais, open62541 já está na pasta Middlewares/Open62541 gerado almagamado
+#add_subdirectory(${open62541_SOURCE_DIR} ${open62541_BINARY_DIR})
+
+# Garantir que o executável principal enxergue o header amalgamado
+# open62541.h gerado em ${open62541_BINARY_DIR}.
+target_include_directories(${PROJECT_NAME} PUBLIC ${open62541_BINARY_DIR})
+
+# Linkar a biblioteca open62541 (agora que o target existe)
+if(TARGET open62541)
+  target_link_libraries(${PROJECT_NAME} open62541)
+endif()
+
+# Suprimir warnings específicos do código gerado do open62541, que não
+# controlamos diretamente, evitando que quebrem o build do firmware.
+if(TARGET open62541-object)
+  target_compile_options(open62541-object PRIVATE
+    -Wno-unused-variable
+    -Wno-implicit-function-declaration
+  )
+  target_compile_definitions(open62541-object PRIVATE
+    LWIP_PROVIDE_ERRNO=0
+    LWIP_ERRNO_STDINCLUDE=1
+  )
+endif()
+
+# Aplicar as mesmas supressões ao alvo principal, já que o single-file
+# open62541.c também é compilado como parte do firmware.
+target_compile_options(${PROJECT_NAME} PRIVATE
+  -Wno-unused-variable
+  -Wno-implicit-function-declaration
+)
 
 # Adicionar includes do HAL ao projeto principal
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${STM32CUBEF4_DIR}/Drivers/STM32F4xx_HAL_Driver/Inc
     ${STM32CUBEF4_DIR}/Drivers/CMSIS/Device/ST/STM32F4xx/Include
     ${STM32CUBEF4_DIR}/Drivers/CMSIS/Include
+)
+
+# Linkar bibliotecas na ordem correta (dependências do open62541 vêm depois)
+target_link_libraries(${PROJECT_NAME}
+    lwip_lib
+    stm32_hal
 )

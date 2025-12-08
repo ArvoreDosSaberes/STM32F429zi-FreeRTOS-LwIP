@@ -366,9 +366,9 @@ static void dhcpClientTask(void *pvParameters)
                     dhcp_stop(&httpNetif);
 
                     ip4_addr_t fallbackIp, fallbackNetmask, fallbackGw;
-                    IP4_ADDR(&fallbackIp, 192, 168, 1, 100);
+                    IP4_ADDR(&fallbackIp, 192, 168, 0, 228);
                     IP4_ADDR(&fallbackNetmask, 255, 255, 255, 0);
-                    IP4_ADDR(&fallbackGw, 192, 168, 1, 1);
+                    IP4_ADDR(&fallbackGw, 192, 168, 0, 1);
 
                     netif_set_addr(&httpNetif, &fallbackIp, &fallbackNetmask, &fallbackGw);
 

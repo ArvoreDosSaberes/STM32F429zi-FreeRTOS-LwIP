@@ -29,6 +29,8 @@
 #include "httpserver.h"
 #include "system_config.h"
 #include "mqtt_service.h"
+#include "opcua_server.h"
+#include "fan_controller.h"
 
 /*-----------------------------------------------------------------------------
  * Declarações Antecipadas (Forward Declarations)
@@ -43,8 +45,11 @@ static void appMainTask(void *pvParameters);
 /* Tarefa de monitoramento do sistema */
 static void appMonitorTask(void *pvParameters);
 
-/* Tarefa do serviço MQTT */
-static void appMqttTask(void *pvParameters);
+/* Tarefa de serviços de comunicação (rede/protocolo) */
+static void appCommServiceTask(void *pvParameters);
+
+/* Callback OPC-UA para comandos do ventilador */
+static void opcuaFanCommandCallback(bool on);
 
 
 /*-----------------------------------------------------------------------------
@@ -80,9 +85,9 @@ int main(void)
                 1,
                 NULL);
 
-    /* Criar tarefa MQTT */
-    xTaskCreate(appMqttTask,
-                "MQTTInit",
+    /* Criar tarefa de serviços de comunicação */
+    xTaskCreate(appCommServiceTask,
+                "CommInit",
                 512,
                 NULL,
                 2,
@@ -207,7 +212,7 @@ static void appMonitorTask(void *pvParameters)
 }
 
 /**
- * @brief Tarefa de inicialização e gerenciamento do serviço MQTT.
+ * @brief Tarefa de inicialização e gerenciamento dos serviços de comunicação.
  *
  * Aguarda a rede estar disponível (IP atribuído via DHCP) e então
  * inicializa e inicia o serviço MQTT para publicar temperatura
@@ -215,7 +220,7 @@ static void appMonitorTask(void *pvParameters)
  *
  * @param pvParameters Parâmetros da tarefa (não utilizado).
  */
-static void appMqttTask(void *pvParameters)
+static void appCommServiceTask(void *pvParameters)
 {
     (void)pvParameters;
     
@@ -260,6 +265,24 @@ static void appMqttTask(void *pvParameters)
     }
     
     printf("[MQTTInit] Servico MQTT iniciado com sucesso!\r\n");
+
+    /* Inicializar servidor OPC-UA após MQTT e rede estarem operacionais */
+    if (opcuaServerInit() == 0)
+    {
+        opcuaServerSetFanCallback(opcuaFanCommandCallback);
+        if (opcuaServerStart() == 0)
+        {
+            printf("[MQTTInit] Servidor OPC-UA iniciado com sucesso!\r\n");
+        }
+        else
+        {
+            printf("[MQTTInit] ERRO ao iniciar servidor OPC-UA\r\n");
+        }
+    }
+    else
+    {
+        printf("[MQTTInit] ERRO ao inicializar servidor OPC-UA\r\n");
+    }
     
     /* Monitorar status do serviço MQTT periodicamente */
     for (;;)
@@ -279,6 +302,16 @@ static void appMqttTask(void *pvParameters)
         
         vTaskDelay(pdMS_TO_TICKS(60000));  /* Log a cada 60 segundos */
     }
+}
+
+/**
+ * @brief Callback chamado pelo servidor OPC-UA para comandos do ventilador.
+ *
+ * @param on true para ligar o ventilador, false para desligar.
+ */
+static void opcuaFanCommandCallback(bool on)
+{
+    fanControllerSetState(on ? FAN_STATE_ON : FAN_STATE_OFF);
 }
 
 /*-----------------------------------------------------------

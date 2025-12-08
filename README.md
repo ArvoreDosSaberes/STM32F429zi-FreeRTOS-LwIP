@@ -12,15 +12,14 @@
 
 O projeto tem como objetivo **ensinar e facilitar o desenvolvimento** com microcontroladores da família STM32 em especial o STM32F411zi. Oferecemos à comunidade templates prontos para uso, permitindo que desenvolvedores deem os primeiros passos de forma rápida e eficiente.
 
-
 Oferecemos à comunidade **templates prontos para uso**, permitindo que desenvolvedores deem os primeiros passos com o STM32 de forma rápida e eficiente, sem a necessidade de configurar tudo do zero.
-
 
 ### Links
 
 - **GitHub**: https://github.com/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP
 - **Site**: https://mcu.tec.br
 - **YouTube**: https://youtube.com/@mcu_fpga
+
 ### Recursos Principais
 
 | Recurso                         | Descrição                                                                |
@@ -88,6 +87,9 @@ Isso irá:
 - Detectar o compilador `arm-none-eabi-gcc`;
 - Baixar e configurar o FreeRTOS via `FetchContent`;
 - Gerar os arquivos de build dentro da pasta `Debug/`.
+- A primeira vez que executar o comando vai demorar devido a clonagem dos repositórios dos códigos fonte do SDK do ScubeF4, FreeRTOS, LwIP e OPC UA necessários ao projeto.
+
+**OBSERVAÇÃO:**  Durante o preparo do ambiente os arquivos Sources/3dparty/open62541/open62541.c e .h deve existir mesmo que vázios, durante de preparanção serão substituidos.
 
 ### 1.2. Compilar
 

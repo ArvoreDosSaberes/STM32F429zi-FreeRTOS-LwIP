@@ -40,7 +40,12 @@ extern "C" {
  * @brief Faz o LwIP fornecer definições de errno (ENOMEM, ENOBUFS, etc.).
  *        Necessário em sistemas embarcados sem biblioteca C completa.
  */
-#define LWIP_PROVIDE_ERRNO              1
+/* Usar errno da libc (newlib) */
+#define LWIP_PROVIDE_ERRNO              0
+#define LWIP_ERRNO_STDINCLUDE           1
+
+/* Usar struct timeval/FD_SET da libc */
+#define LWIP_TIMEVAL_PRIVATE            0
 
 /*-----------------------------------------------------------------------------
  * Configurações de Memória
@@ -242,11 +247,6 @@ extern "C" {
  */
 #define TCP_SYNMAXRTX                   6
 
-/**
- * @brief Habilita Nagle algorithm.
- */
-#define TCP_NODELAY                     0
-
 /*-----------------------------------------------------------------------------
  * Configurações de Thread/OS (FreeRTOS)
  *----------------------------------------------------------------------------*/
@@ -286,7 +286,12 @@ extern "C" {
 /**
  * @brief Habilita API de sockets BSD.
  */
-#define LWIP_SOCKET                     0
+#define LWIP_SOCKET                     1
+
+/**
+ * @brief Evita redefinir read/write/close/fcntl/poll como macros.
+ */
+#define LWIP_POSIX_SOCKETS_IO_NAMES     0
 
 /**
  * @brief Habilita API netif.

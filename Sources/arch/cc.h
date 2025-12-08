@@ -16,6 +16,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 /* Incluir CMSIS para funções de controle de interrupção */
 #include "stm32f4xx.h"

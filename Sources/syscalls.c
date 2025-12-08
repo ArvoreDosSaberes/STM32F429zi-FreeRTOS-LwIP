@@ -21,12 +21,16 @@
  */
 
 /* Includes */
+/* Tipos básicos (dev_t, mode_t, uid_t, gid_t, clock_t, etc.) */
+#include <sys/types.h>
+#include <time.h>
+
+/* Demais headers da libc/newlib usados pelos stubs de syscall */
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
 #include <signal.h>
-#include <time.h>
 #include <sys/time.h>
 #include <sys/times.h>
 
