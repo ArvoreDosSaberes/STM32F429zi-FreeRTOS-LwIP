@@ -359,7 +359,7 @@ O sistema implementa um cliente DHCP inteligente com as seguintes característic
 1. **Inicialização**: Tenta obter IP via DHCP automaticamente
 2. **Monitoramento de Link**: Detecta conexão/desconexão do cabo Ethernet
 3. **Fallback Automático**: Após 30 segundos sem resposta DHCP, usa IP estático fallback:
-   - IP: `192.168.1.100`
+   - IP: `192.168.0.228`
    - Netmask: `255.255.255.0`
    - Gateway: `192.168.1.1`
 4. **Reconexão**: Ao reconectar o cabo, reinicia o DHCP automaticamente

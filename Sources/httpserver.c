@@ -375,7 +375,7 @@ static void dhcpClientTask(void *pvParameters)
                     dhcpStarted = 0;
                     ipObtained = 1;
 
-                    printf("[DHCP] IP fallback: 192.168.1.100\n\r");
+                    printf("[DHCP] IP fallback: 192.168.0.228\n\r");
                 }
             }
         }

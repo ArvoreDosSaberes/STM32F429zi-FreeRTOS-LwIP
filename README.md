@@ -61,7 +61,7 @@ Este documento explica, passo a passo, como:
 
 ### Características do Servidor HTTP
 
-- **DHCP com Fallback**: Obtém IP automaticamente via DHCP; após 30s sem resposta, usa IP estático `192.168.1.100`
+- **DHCP com Fallback**: Obtém IP automaticamente via DHCP; após 30s sem resposta, usa IP estático `192.168.0.228`
 - **Monitoramento de Link**: Detecta conexão/desconexão do cabo Ethernet
 - **Páginas Embarcadas**: Landing page e página 404 customizadas armazenadas em Flash
 - **Hostname DHCP**: Identificado como `stm32-http` no servidor DHCP
