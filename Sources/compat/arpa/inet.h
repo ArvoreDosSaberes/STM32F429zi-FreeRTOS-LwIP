@@ -1,7 +1,6 @@
-#ifndef COMPAT_ARPA_INET_H
-#define COMPAT_ARPA_INET_H
+#ifndef __ARPA_H__
+#define __ARPA_H__
 
-/* Use directly the LwIP implementations to avoid duplicate macros/types. */
-#include <lwip/inet.h>
+#include "lwip/inet.h"
 
-#endif /* COMPAT_ARPA_INET_H */
+#endif /* __ARPA_H__ */
