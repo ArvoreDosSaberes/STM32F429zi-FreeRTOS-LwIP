@@ -10,6 +10,8 @@
 [![GitHub Stars](https://img.shields.io/github/stars/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP?style=social)](https://github.com/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP)
 [![GitHub Issues](https://img.shields.io/github/issues/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP)](https://github.com/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP/issues)
 
+> Uma boa boa forma de colaborar com o projeto é deixar um [Issue](https://github.com/ArvoreDosSaberes/STM32F429zi-FreeRTOS-LwIP/issues) sugerindo alguma implementação que use FreeRTOS + LwIP, estou estudando o tema, e terei o maior prazer em trabalhar em sua sugestão.
+
 O projeto tem como objetivo **ensinar e facilitar o desenvolvimento** com microcontroladores da família STM32 em especial o STM32F411zi. Oferecemos à comunidade templates prontos para uso, permitindo que desenvolvedores deem os primeiros passos de forma rápida e eficiente.
 
 
