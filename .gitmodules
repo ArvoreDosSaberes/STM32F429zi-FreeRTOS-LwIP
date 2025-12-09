@@ -1,0 +1,3 @@
+[submodule "makefs"]
+	path = makefs
+	url = git@github.com:ArvoreDosSaberes/mk-lwip-httpd-fs.git
