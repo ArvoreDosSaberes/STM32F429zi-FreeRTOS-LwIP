@@ -1,0 +1,14 @@
+.st-logo {
+  max-width: 140px;
+  width: 100%;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.st-logo-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}

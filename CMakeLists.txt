@@ -57,6 +57,8 @@ set (PROJECT_SOURCES
 	Sources/httpserver.c
 	Sources/webpages.c
 	Sources/system_config.c
+	Sources/rest_dispatcher.c
+	Sources/rest_handlers.c
 	)
 
 set (PROJECT_DEFINES

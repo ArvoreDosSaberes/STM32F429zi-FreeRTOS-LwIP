@@ -1,0 +1,24 @@
+{
+  "name": "stm32-f429zi-http-react",
+  "version": "1.0.0",
+  "description": "Projeto de demonstração de como usar o REACT no STM32",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:install": "cd WebReact && npm install && npm run build"
+  },
+  "keywords": [
+    "STM32",
+    "STM32F429ZI",
+    "NuceloSTM32F429",
+    "React"
+  ],
+  "author": "Carlos Delfino",
+  "license": "CC-BY-4.0",
+  "dependencies": {
+    "pine": "^1.1.1"
+  }
+}

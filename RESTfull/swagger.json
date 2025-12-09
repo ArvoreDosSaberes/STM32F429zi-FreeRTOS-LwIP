@@ -1,0 +1,162 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "STM32 HTTP API",
+    "version": "1.0.0",
+    "description": "API do microcontrolador STM32 para leitura de temperatura, controle do ventilador e consulta do tempo de atividade (uptime) em segundos."
+  },
+  "servers": [
+    {
+      "url": "http://192.168.0.100",
+      "description": "Servidor HTTP do microcontrolador"
+    }
+  ],
+  "paths": {
+    "/temperature": {
+      "get": {
+        "summary": "Retorna a temperatura",
+        "description": "Retorna a temperatura atual do sistema, em graus Celsius ou Fahrenheit, conforme o parâmetro informado.",
+        "parameters": [
+          {
+            "name": "unit",
+            "in": "query",
+            "required": true,
+            "description": "Unidade de temperatura desejada.",
+            "schema": {
+              "type": "string",
+              "enum": ["C", "F"],
+              "example": "C"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Temperatura retornada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "number",
+                      "format": "float",
+                      "description": "Valor da temperatura na unidade solicitada",
+                      "example": 25.3
+                    },
+                    "unit": {
+                      "type": "string",
+                      "description": "Unidade da temperatura retornada",
+                      "enum": ["C", "F"],
+                      "example": "C"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetro inválido"
+          }
+        }
+      }
+    },
+    "/fan": {
+      "get": {
+        "summary": "Consulta o estado do ventilador",
+        "description": "Retorna se o ventilador está ligado ou desligado.",
+        "responses": {
+          "200": {
+            "description": "Estado atual do ventilador",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "description": "Estado do ventilador",
+                      "enum": ["on", "off"],
+                      "example": "on"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Liga ou desliga o ventilador",
+        "description": "Altera o estado do ventilador para ligado (`on`) ou desligado (`off`).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "type": "string",
+                    "description": "Novo estado do ventilador",
+                    "enum": ["on", "off"],
+                    "example": "on"
+                  }
+                },
+                "required": ["state"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Estado do ventilador atualizado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "state": {
+                      "type": "string",
+                      "description": "Estado atual do ventilador após o comando",
+                      "enum": ["on", "off"],
+                      "example": "on"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Corpo da requisição inválido"
+          }
+        }
+      }
+    },
+    "/time": {
+      "get": {
+        "summary": "Tempo de atividade do microcontrolador",
+        "description": "Retorna o tempo que o microcontrolador está ativo (uptime) em segundos.",
+        "responses": {
+          "200": {
+            "description": "Tempo de atividade retornado com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "uptimeSeconds": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "Tempo de atividade em segundos",
+                      "example": 123456
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
