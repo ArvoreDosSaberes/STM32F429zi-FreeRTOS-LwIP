@@ -35,6 +35,10 @@
 #include "opcua_server.h"
 #include "fan_controller.h"
 #include "lwip/apps/sntp.h"
+#include "logger.h"
+
+/* Redireciona printf para uma versao thread-safe baseada em mutex do FreeRTOS. */
+#define printf(...) loggerPrint(__VA_ARGS__)
 
 /*-----------------------------------------------------------------------------
  * Declarações Antecipadas (Forward Declarations)
@@ -78,6 +82,9 @@ int main(void)
 {
     /* Inicializar hardware do sistema */
     systemHardwareInit();
+
+	/* Inicializar logger (mutex para proteger saidas de printf entre tasks) */
+	loggerInit();
 
     /* Criar tarefa principal da aplicação */
     xTaskCreate(appMainTask,
@@ -237,6 +244,8 @@ static void appCommServiceTask(void *pvParameters)
     char ipBuffer[16];
     MqttServiceError mqttErr;
     
+    printf("[Comm] appCommServiceTask iniciada\r\n");
+    
     printf("[MQTTInit] Aguardando IP via DHCP...\r\n");
     
     /* Aguardar até ter um IP válido */
@@ -248,17 +257,29 @@ static void appCommServiceTask(void *pvParameters)
     printf("[MQTTInit] IP obtido: %s\r\n", ipBuffer);
 
     /* Iniciar sincronização de tempo via NTP antes dos demais serviços */
+    printf("[Time] Iniciando cliente SNTP\r\n");
     timeSyncInit();
+    printf("[Time] Aguardando primeira sincronizacao SNTP\r\n");
     timeSyncWaitAndLog();
+
+    printf("[Comm] SNTP concluido, criando tasks MQTT/OPC-UA\r\n");
 
     /* Lançar tasks dedicadas para init MQTT e OPC UA */
     if (xTaskCreate(mqttInitTask, "MQTTInit", 256, NULL, 2, NULL) != pdPASS)
     {
         printf("[MQTTInit] ERRO ao criar task de init MQTT\r\n");
     }
-    if (xTaskCreate(opcuaInitTask, "OPCUAInit", 24 * 1024, NULL, 2, NULL) != pdPASS)
+    else
+    {
+        printf("[MQTTInit] Task de init MQTT criada com sucesso\r\n");
+    }
+    if (xTaskCreate(opcuaInitTask, "OPCUAInit", 4 * 1024, NULL, 2, NULL) != pdPASS)
     {
         printf("[OPCUAInit] ERRO ao criar task de init OPC-UA\r\n");
+    }
+    else
+    {
+        printf("[OPCUAInit] Task de init OPC-UA criada com sucesso\r\n");
     }
     
     /* Monitorar status do serviço MQTT periodicamente */
@@ -312,24 +333,30 @@ static void opcuaInitTask(void *pvParameters)
 {
     (void)pvParameters;
 
-    if (opcuaServerInit() == 0)
-    {
-        opcuaServerSetFanCallback(opcuaFanCommandCallback);
-        if (opcuaServerStart() == 0)
-        {
-            printf("[OPCUAInitTask] Servidor OPC-UA iniciado com sucesso!\r\n");
-        }
-        else
-        {
-            printf("[OPCUAInitTask] ERRO ao iniciar servidor OPC-UA\r\n");
-        }
-    }
-    else
-    {
-        printf("[OPCUAInitTask] ERRO ao inicializar servidor OPC-UA\r\n");
-    }
+	printf("[OPCUAInitTask] opcuaInitTask iniciada\r\n");
 
-    vTaskDelete(NULL);
+	int initStatus = opcuaServerInit();
+	printf("[OPCUAInitTask] opcuaServerInit retornou %d\r\n", initStatus);
+	if (initStatus == 0)
+	{
+		opcuaServerSetFanCallback(opcuaFanCommandCallback);
+		int startStatus = opcuaServerStart();
+		printf("[OPCUAInitTask] opcuaServerStart retornou %d\r\n", startStatus);
+		if (startStatus == 0)
+		{
+			printf("[OPCUAInitTask] Servidor OPC-UA iniciado com sucesso!\r\n");
+		}
+		else
+		{
+			printf("[OPCUAInitTask] ERRO ao iniciar servidor OPC-UA (codigo=%d)\r\n", startStatus);
+		}
+	}
+	else
+	{
+		printf("[OPCUAInitTask] ERRO ao inicializar servidor OPC-UA (codigo=%d)\r\n", initStatus);
+	}
+
+	vTaskDelete(NULL);
 }
 
 /**
@@ -405,7 +432,9 @@ static void timeSyncWaitAndLog(void)
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char* pcTaskName)
 {
     (void)xTask;
-    (void)pcTaskName;
+
+    /* Logar erro critico antes de travar o sistema para facilitar diagnostico */
+    printf("[RTOS] Stack overflow na task: %s\r\n", pcTaskName ? pcTaskName : "(null)");
 
     /* Parar execução em caso de estouro de pilha */
     taskDISABLE_INTERRUPTS();
@@ -419,6 +448,9 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char* pcTaskName)
  */
 void vApplicationMallocFailedHook(void)
 {
+    /* Logar erro critico de memoria antes de travar o sistema */
+    printf("[RTOS] Falha de alocacao de memoria (vApplicationMallocFailedHook)\r\n");
+
     /* Parar execução em caso de falha de alocação */
     taskDISABLE_INTERRUPTS();
     for (;;)

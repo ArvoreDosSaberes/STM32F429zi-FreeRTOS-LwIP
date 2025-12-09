@@ -10,6 +10,10 @@
 #include "open62541.h"
 
 #include <stdio.h>
+#include "logger.h"
+
+/* Redireciona printf para loggerPrint para garantir logs nao intercalados entre tasks. */
+#define printf(...) loggerPrint(__VA_ARGS__)
 
 /*----------------------------------------------------------------------------- 
  * Variáveis Estáticas
@@ -58,46 +62,65 @@ int opcuaServerInit(void)
 {
     if (opcuaInitialized)
     {
+        printf("[opcua/init] opcuaServerInit chamado, servidor ja inicializado\r\n");
         return 0;
     }
+
+    printf("[opcua/init] Iniciando inicializacao do servidor OPC-UA\r\n");
 
     /* Inicializar sensores/atuadores necessários */
     if (!temperatureSensorIsInitialized())
     {
+        printf("[opcua/init] Inicializando sensor de temperatura\r\n");
         if (temperatureSensorInit() != TEMP_SENSOR_OK)
         {
             printf("[OPCUA] Erro ao inicializar sensor de temperatura\r\n");
             return -1;
         }
+        printf("[opcua/init] Sensor de temperatura inicializado\r\n");
+    }
+    else
+    {
+        printf("[opcua/init] Sensor de temperatura ja inicializado\r\n");
     }
 
     /* fanControllerInit é idempotente o suficiente para ser chamado aqui */
+    printf("[opcua/init] Inicializando controlador do ventilador\r\n");
     if (fanControllerInit() != 0)
     {
         printf("[OPCUA] Erro ao inicializar controlador do ventilador\r\n");
         return -2;
     }
+    printf("[opcua/init] Controlador do ventilador inicializado\r\n");
 
-    /* Criar instância do servidor e configuração mínima padrão */
-    opcuaServer = UA_Server_new();
-    if (opcuaServer == NULL)
-    {
-        printf("[OPCUA] Erro ao criar instancia do servidor\r\n");
-        return -3;
-    }
+    /* Criar configuracao minima do servidor em estrutura local */
+    printf("[opcua/init] Aplicando configuracao minima do servidor\r\n");
+    UA_ServerConfig config;
+    memset(&config, 0, sizeof(UA_ServerConfig));
 
-    UA_ServerConfig *config = UA_Server_getConfig(opcuaServer);
-    /* Buffers menores para reduzir uso de heap na inicialização */
     UA_StatusCode cfgStatus = UA_ServerConfig_setMinimalCustomBuffer(
-        config, OPCUA_SERVER_PORT, NULL,
+        &config, OPCUA_SERVER_PORT, NULL,
         4096, /* sendBuffer */
         4096  /* recvBuffer */
     );
     if (cfgStatus != UA_STATUSCODE_GOOD)
     {
         printf("[OPCUA] Erro ao configurar servidor OPC-UA: 0x%08lX\r\n", (unsigned long)cfgStatus);
+        UA_ServerConfig_clean(&config);
         return -4;
     }
+    printf("[opcua/init] Configuracao minima aplicada com sucesso\r\n");
+
+    /* Criar instância do servidor com a configuração já inicializada */
+    printf("[opcua/init] Criando instancia do servidor OPC-UA\r\n");
+    opcuaServer = UA_Server_newWithConfig(&config);
+    if (opcuaServer == NULL)
+    {
+        printf("[OPCUA] Erro ao criar instancia do servidor (UA_Server_newWithConfig)\r\n");
+        UA_ServerConfig_clean(&config);
+        return -3;
+    }
+    printf("[opcua/init] Instancia do servidor criada com sucesso\r\n");
 
     /* Registrar namespace do dispositivo (ns=1) */
     UA_UInt16 nsIndex = UA_Server_addNamespace(opcuaServer, "STM32F429");
@@ -114,6 +137,7 @@ int opcuaServerInit(void)
     attr.dataType = UA_TYPES[UA_TYPES_FLOAT].typeId;
     attr.accessLevel = UA_ACCESSLEVELMASK_READ;
 
+    printf("[opcua/init] Criando no OPC-UA Temperature\r\n");
     UA_StatusCode ret = UA_Server_addVariableNode(
         opcuaServer,
         NODEID_TEMPERATURE,
@@ -127,6 +151,7 @@ int opcuaServerInit(void)
         printf("[OPCUA] Erro ao criar no Temperature: 0x%08lX\r\n", (unsigned long)ret);
         return -5;
     }
+    printf("[opcua/init] No Temperature criado com sucesso\r\n");
 
     /* FanState (Boolean, read-only) */
     UA_VariableAttributes_init(&attr);
@@ -136,6 +161,7 @@ int opcuaServerInit(void)
     attr.dataType = UA_TYPES[UA_TYPES_BOOLEAN].typeId;
     attr.accessLevel = UA_ACCESSLEVELMASK_READ;
 
+    printf("[opcua/init] Criando no OPC-UA FanState\r\n");
     ret = UA_Server_addVariableNode(
         opcuaServer,
         NODEID_FAN_STATE,
@@ -149,6 +175,7 @@ int opcuaServerInit(void)
         printf("[OPCUA] Erro ao criar no FanState: 0x%08lX\r\n", (unsigned long)ret);
         return -6;
     }
+    printf("[opcua/init] No FanState criado com sucesso\r\n");
 
     /* FanCommand (Boolean, write) */
     UA_VariableAttributes_init(&attr);
@@ -158,6 +185,7 @@ int opcuaServerInit(void)
     attr.dataType = UA_TYPES[UA_TYPES_BOOLEAN].typeId;
     attr.accessLevel = UA_ACCESSLEVELMASK_READ | UA_ACCESSLEVELMASK_WRITE;
 
+    printf("[opcua/init] Criando no OPC-UA FanCommand\r\n");
     ret = UA_Server_addVariableNode(
         opcuaServer,
         NODEID_FAN_COMMAND,
@@ -171,17 +199,20 @@ int opcuaServerInit(void)
         printf("[OPCUA] Erro ao criar no FanCommand: 0x%08lX\r\n", (unsigned long)ret);
         return -7;
     }
+    printf("[opcua/init] No FanCommand criado com sucesso\r\n");
 
     /* Registrar callback de escrita para FanCommand */
     UA_DataSource fanCmdDs;
     fanCmdDs.read = NULL; /* leitura padrão a partir do valor armazenado */
     fanCmdDs.write = writeFanCommand;
+    printf("[opcua/init] Registrando DataSource FanCommand\r\n");
     ret = UA_Server_setVariableNode_dataSource(opcuaServer, NODEID_FAN_COMMAND, fanCmdDs);
     if (ret != UA_STATUSCODE_GOOD)
     {
         printf("[OPCUA] Erro ao registrar DataSource FanCommand: 0x%08lX\r\n", (unsigned long)ret);
         return -8;
     }
+    printf("[opcua/init] DataSource FanCommand registrado com sucesso\r\n");
 
     /* TempMax (Float, read/write) */
     UA_VariableAttributes_init(&attr);
@@ -190,6 +221,7 @@ int opcuaServerInit(void)
     attr.dataType = UA_TYPES[UA_TYPES_FLOAT].typeId;
     attr.accessLevel = UA_ACCESSLEVELMASK_READ | UA_ACCESSLEVELMASK_WRITE;
 
+    printf("[opcua/init] Criando no OPC-UA TempMax\r\n");
     ret = UA_Server_addVariableNode(
         opcuaServer,
         NODEID_TEMP_MAX,
@@ -203,16 +235,19 @@ int opcuaServerInit(void)
         printf("[OPCUA] Erro ao criar no TempMax: 0x%08lX\r\n", (unsigned long)ret);
         return -9;
     }
+    printf("[opcua/init] No TempMax criado com sucesso\r\n");
 
     UA_DataSource tempMaxDs;
     tempMaxDs.read = NULL;
     tempMaxDs.write = writeTempMax;
+    printf("[opcua/init] Registrando DataSource TempMax\r\n");
     ret = UA_Server_setVariableNode_dataSource(opcuaServer, NODEID_TEMP_MAX, tempMaxDs);
     if (ret != UA_STATUSCODE_GOOD)
     {
         printf("[OPCUA] Erro ao registrar DataSource TempMax: 0x%08lX\r\n", (unsigned long)ret);
         return -10;
     }
+    printf("[opcua/init] DataSource TempMax registrado com sucesso\r\n");
 
     /* TempMin (Float, read/write) */
     UA_VariableAttributes_init(&attr);
@@ -221,6 +256,7 @@ int opcuaServerInit(void)
     attr.dataType = UA_TYPES[UA_TYPES_FLOAT].typeId;
     attr.accessLevel = UA_ACCESSLEVELMASK_READ | UA_ACCESSLEVELMASK_WRITE;
 
+    printf("[opcua/init] Criando no OPC-UA TempMin\r\n");
     ret = UA_Server_addVariableNode(
         opcuaServer,
         NODEID_TEMP_MIN,
@@ -234,17 +270,21 @@ int opcuaServerInit(void)
         printf("[OPCUA] Erro ao criar no TempMin: 0x%08lX\r\n", (unsigned long)ret);
         return -11;
     }
+    printf("[opcua/init] No TempMin criado com sucesso\r\n");
 
     UA_DataSource tempMinDs;
     tempMinDs.read = NULL;
     tempMinDs.write = writeTempMin;
+    printf("[opcua/init] Registrando DataSource TempMin\r\n");
     ret = UA_Server_setVariableNode_dataSource(opcuaServer, NODEID_TEMP_MIN, tempMinDs);
     if (ret != UA_STATUSCODE_GOOD)
     {
         printf("[OPCUA] Erro ao registrar DataSource TempMin: 0x%08lX\r\n", (unsigned long)ret);
         return -12;
     }
+    printf("[opcua/init] DataSource TempMin registrado com sucesso\r\n");
 
+    printf("[opcua/init] Inicializacao do servidor OPC-UA concluida com sucesso\r\n");
     opcuaInitialized = true;
     printf("[OPCUA] Servidor inicializado na porta %d\r\n", OPCUA_SERVER_PORT);
 
@@ -270,7 +310,7 @@ int opcuaServerStart(void)
 
     BaseType_t res = xTaskCreate(opcuaServerTask,
                                  "OPCUA",
-                                 8 * 1024,
+                                 4 * 1024,
                                  NULL,
                                  2,
                                  NULL);
@@ -292,15 +332,28 @@ static void opcuaServerTask(void *pvParameters)
 {
     (void)pvParameters;
 
-    printf("[OPCUA] Tarefa OPC-UA iniciada\r\n");
+    TickType_t taskStart = xTaskGetTickCount();
+    printf("[opcua/task] Tarefa OPC-UA iniciada (tick=%lu)\r\n", (unsigned long)taskStart);
 
     /* Aguardar rede disponível */
+    TickType_t waitStart = xTaskGetTickCount();
+    printf("[opcua/task] Aguardando rede disponivel...\r\n");
+    unsigned long waitLoops = 0UL;
     while (!httpServerIsConnected())
     {
         vTaskDelay(pdMS_TO_TICKS(1000));
+        waitLoops++;
+        if ((waitLoops % 5UL) == 0UL)
+        {
+            TickType_t now = xTaskGetTickCount();
+            unsigned long elapsedMs = (unsigned long)((now - waitStart) * portTICK_PERIOD_MS);
+            printf("[opcua/task] Rede ainda indisponivel, aguardando ha %lu ms\r\n", elapsedMs);
+        }
     }
 
-    printf("[OPCUA] Rede disponivel, iniciando loop do servidor OPC-UA\r\n");
+    TickType_t waitEnd = xTaskGetTickCount();
+    unsigned long totalWaitMs = (unsigned long)((waitEnd - waitStart) * portTICK_PERIOD_MS);
+    printf("[opcua/task] Rede disponivel, aguardou %lu ms antes de iniciar loop do servidor OPC-UA\r\n", totalWaitMs);
 
     for (;;)
     {
@@ -308,7 +361,11 @@ static void opcuaServerTask(void *pvParameters)
         updateFanStateNode();
 
         /* Executar iteração do servidor */
-        UA_Server_run_iterate(opcuaServer, false);
+        UA_StatusCode loopStatus = UA_Server_run_iterate(opcuaServer, false);
+        if (loopStatus != UA_STATUSCODE_GOOD)
+        {
+            printf("[opcua/task] Aviso: UA_Server_run_iterate retornou 0x%08lX\r\n", (unsigned long)loopStatus);
+        }
 
         vTaskDelay(pdMS_TO_TICKS(OPCUA_UPDATE_INTERVAL_MS));
     }

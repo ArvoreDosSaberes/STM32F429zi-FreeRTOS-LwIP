@@ -40,8 +40,8 @@ extern "C" {
  * @brief Faz o LwIP fornecer definições de errno (ENOMEM, ENOBUFS, etc.).
  *        Necessário em sistemas embarcados sem biblioteca C completa.
  */
-/* Usar errno da libc (newlib) */
-#define LWIP_PROVIDE_ERRNO              0
+/* Usar errno da libc (newlib): garantir que lwip/errno.h apenas inclua <errno.h> */
+#undef LWIP_PROVIDE_ERRNO
 #define LWIP_ERRNO_STDINCLUDE           1
 
 /* Usar struct timeval/FD_SET da libc */
@@ -289,7 +289,9 @@ extern "C" {
 #define LWIP_SOCKET                     1
 
 /**
- * @brief Evita redefinir read/write/close/fcntl/poll como macros.
+ * @brief Evita redefinir read/write/close/fcntl/poll como macros via macros do LwIP.
+ *        Mantemos como 0 e fornecemos stubs POSIX especificos (fcntl, etc.) onde
+ *        necessario, para evitar conflitos de assinatura com lwip_fcntl.
  */
 #define LWIP_POSIX_SOCKETS_IO_NAMES     0
 

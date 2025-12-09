@@ -14,6 +14,7 @@
 #include "lwip/netif.h"
 #include "lwip/dhcp.h"
 #include "lwip/ip4_addr.h"
+#include "lwip/netifapi.h"
 
 #include "ethernetif.h"
 #include "httpserver.h"
@@ -128,21 +129,6 @@ int httpServerInit(void)
     netif_set_up(&httpNetif);
 
     printf("[HTTP] Interface de rede configurada\n\r");
-
-    /* Só iniciar DHCP se o link estiver ativo */
-    if (netif_is_link_up(&httpNetif))
-    {
-        printf("[HTTP] Link ativo, iniciando DHCP...\n\r");
-        err_t dhcpErr = dhcp_start(&httpNetif);
-        if (dhcpErr != ERR_OK)
-        {
-            printf("[HTTP] ERRO: dhcp_start() retornou %d\n\r", dhcpErr);
-        }
-    }
-    else
-    {
-        printf("[HTTP] AVISO: Link inativo, DHCP sera iniciado quando o link subir\n\r");
-    }
 
     /* Criar tarefa para monitorar DHCP */
     xTaskCreate(dhcpClientTask,
@@ -295,7 +281,7 @@ static void dhcpClientTask(void *pvParameters)
             if (currentLinkState)
             {
                 printf("[DHCP] Link ativo - iniciando cliente DHCP\n\r");
-                dhcp_start(&httpNetif);
+                netifapi_dhcp_start(&httpNetif);
                 dhcpStarted = 1;
                 dhcpWaitCounter = 0;
                 ipObtained = 0;
@@ -303,7 +289,7 @@ static void dhcpClientTask(void *pvParameters)
             else
             {
                 printf("[DHCP] Link perdido - parando DHCP\n\r");
-                dhcp_stop(&httpNetif);
+                netifapi_dhcp_stop(&httpNetif);
                 dhcpStarted = 0;
                 ipObtained = 0;
             }
@@ -363,7 +349,7 @@ static void dhcpClientTask(void *pvParameters)
                 {
                     printf("[DHCP] Timeout! Usando IP estatico fallback\n\r");
 
-                    dhcp_stop(&httpNetif);
+                    netifapi_dhcp_stop(&httpNetif);
 
                     ip4_addr_t fallbackIp, fallbackNetmask, fallbackGw;
                     IP4_ADDR(&fallbackIp, 192, 168, 0, 228);

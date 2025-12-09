@@ -114,6 +114,16 @@ make -C Debug -j"$(nproc)"
 
 ---
 
+## 1.3 Gerar novo open62541
+
+cmake -DCMAKE_TOOLCHAIN_FILE=cubeide-gcc.cmake       -S . -B Debug       -G "Unix Makefiles"       -DCMAKE_BUILD_TYPE=Debug -DOPEN62541_GIT_CLONE=ON -DOPEN62541_VERSION=1.4.9 -DOPEN62541_BUILD=ON -DOPEN62541_COPY=ON
+
+prociga com o proce de compilação acima.
+
+---
+
+
+
 ## 2. Gerar e gravar o binário na Nucleo STM32F429ZI
 
 ### 2.1. Gerar o arquivo `.bin` a partir do `.elf`

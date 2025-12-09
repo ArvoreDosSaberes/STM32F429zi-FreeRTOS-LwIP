@@ -143,7 +143,8 @@ set (PROJECT_SOURCES
 	Sources/temperature_sensor.c
 	Sources/fan_controller.c
 	Sources/opcua_server.c
-    Sources/compat/posix_stubs.c
+	Sources/logger.c
+	Sources/compat/posix_stubs.c
     Middlewares/Open62541/open62541.c
 	)
 
@@ -262,6 +263,13 @@ set (CMAKE_C_FLAGS "${MCPU} -std=gnu11 ${MFPU} ${MFLOAT_ABI} ${RUNTIME_LIBRARY} 
 set (CMAKE_EXE_LINKER_FLAGS "-T${LINKER_SCRIPT} ${RUNTIME_LIBRARY_SYSCALLS} -Wl,-Map=test.map -Wl,--gc-sections -static -Wl,--start-group -lc -lm -Wl,--end-group")
 set (CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS} -x assembler-with-cpp")
 
+# Para evitar que warnings específicos do Open62541 (formatação e labels
+# não utilizados como 'update_statistics') sejam promovidos a erro pelo
+# -Werror global, aplicamos flags apenas a este arquivo amalgamado.
+set_source_files_properties(Middlewares/Open62541/open62541.c PROPERTIES
+    COMPILE_OPTIONS "-Wno-error=format;-Wno-format;-Wno-unused-label"
+)
+
 # Baixando o FreeRTOS do GitHub
 include(FetchContent)
 FetchContent_Declare(FreeRTOS
@@ -313,6 +321,8 @@ set(LWIP_DIR ${lwip_SOURCE_DIR})
 include_directories(
     ${LWIP_DIR}/src/include
     ${LWIP_DIR}/src/include/lwip/apps
+    ${LWIP_DIR}/src/include/arch
+    ${LWIP_DIR}/src/include/compat
     ${freertos_SOURCE_DIR}/include
     ${freertos_SOURCE_DIR}/portable/GCC/ARM_CM4F
 )
@@ -383,6 +393,11 @@ set(LWIP_MQTT_SRCS
     ${LWIP_DIR}/src/apps/mqtt/mqtt.c
 )
 
+# Cliente SNTP/NTP
+set(LWIP_SNTP_SRCS
+    ${LWIP_DIR}/src/apps/sntp/sntp.c
+)
+
 # Criar biblioteca estática LwIP
 add_library(lwip_lib STATIC
     ${LWIP_CORE_SRCS}
@@ -391,6 +406,7 @@ add_library(lwip_lib STATIC
     ${LWIP_NETIF_SRCS}
     ${LWIP_APPS_SRCS}
     ${LWIP_MQTT_SRCS}
+    ${LWIP_SNTP_SRCS}
 )
 
 # Incluir diretórios do LwIP
@@ -412,73 +428,166 @@ target_compile_definitions(lwip_lib PUBLIC
 )
 
 #############################################################################################################################
-# Configuração do open62541 (Servidor OPC-UA) - geração automática do single-file
+# Configuração opcional do open62541 (clonar, buildar e opcionalmente copiar
+# o single-file para Middlewares/Open62541)
+#
+# Regras:
+# - OPEN62541_GIT_CLONE: realiza o clone do repositório.
+# - OPEN62541_VERSION: se informado, faz checkout da tag vX.Y.Z.
+# - OPEN62541_BUILD: obrigatório para uso de OPEN62541_SOURCE_DIR e
+#   OPEN62541_COPY (faz o add_subdirectory e gera os artefatos).
+# - OPEN62541_SOURCE_DIR: diretório-fonte do open62541 já clonado.
+# - OPEN62541_COPY: se ativo, copia open62541.c/.h gerados para
+#   Middlewares/Open62541.
+# - Se OPEN62541_SOURCE_DIR estiver definido, OPEN62541_COPY não pode ser
+#   usado em conjunto.
 #############################################################################################################################
-# Não precisa mais pois foi gerado o c/h em almagamado e está na pasta Middlewares/Open62541
-#FetchContent_Declare(open62541
-#  GIT_REPOSITORY https://github.com/open62541/open62541.git
-#  GIT_TAG v1.4.9
-#  GIT_SHALLOW TRUE
-#  GIT_PROGRESS TRUE
-#)
 
-#FetchContent_GetProperties(open62541)
-#if(NOT open62541_POPULATED)
-#  FetchContent_Populate(open62541)
-#endif()
+option(OPEN62541_GIT_CLONE "Clonar open62541 durante o configure" OFF)
+set(OPEN62541_VERSION "" CACHE STRING "Tag x.y.z para checkout (usa tag 'vX.Y.Z')")
+set(OPEN62541_SOURCE_DIR "" CACHE PATH "Diretório fonte do open62541 (opcional, se já clonado)")
+option(OPEN62541_BUILD "Buildar open62541 como subprojeto" OFF)
+option(OPEN62541_COPY "Copiar open62541.c/.h gerados para Middlewares/Open62541" OFF)
+set(OPEN62541_BUILD_DIR "${CMAKE_BINARY_DIR}/open62541-build" CACHE PATH "Diretório de build do open62541")
 
-# Configuração da arquitetura do open62541 para FreeRTOS + LwIP (STM32F4)
-set(UA_ARCHITECTURE "freertosLWIP" CACHE STRING "")
-set(UA_NAMESPACE_ZERO "MINIMAL" CACHE STRING "")
-set(UA_ENABLE_SUBSCRIPTIONS "OFF" CACHE BOOL "" FORCE)
-set(UA_ENABLE_METHODCALLS "OFF" CACHE BOOL "" FORCE)
-set(UA_ENABLE_HISTORIZING "OFF" CACHE BOOL "" FORCE)
-set(UA_ENABLE_SUBSCRIPTIONS_EVENTS "OFF" CACHE BOOL "" FORCE)
-set(UA_ENABLE_AMALGAMATION ON CACHE BOOL "Enable open62541 single-file generation" FORCE)
-set(CMAKE_BUILD_TYPE "Release" CACHE STRING "")
-set(UA_ENABLE_AMALGAMATION ON CACHE BOOL "")
-set(UA_ENABLE_ENCRYPTION OFF CACHE BOOL "")
-set(UA_MULTITHREADING 0 CACHE BOOL "")
-# Desabilitar funcionalidades que dependem de stack POSIX completa
-set(UA_ENABLE_DISCOVERY "OFF" CACHE BOOL "" FORCE)
-set(UA_ENABLE_DISCOVERY_MULTICAST "OFF" CACHE BOOL "" FORCE)
-set(UA_ENABLE_PUBSUB "OFF" CACHE BOOL "" FORCE)
-set(UA_ENABLE_PUBSUB_INFORMATIONMODEL "OFF" CACHE BOOL "" FORCE)
-set(UA_ENABLE_PUBSUB_UDP "OFF" CACHE BOOL "" FORCE)
-set(UA_ENABLE_WEBSOCKET_SERVER "OFF" CACHE BOOL "" FORCE)
-set(UA_ENABLE_EVENTLOOP "OFF" CACHE BOOL "" FORCE)
-
-# Incluir diretório de headers de compatibilidade (arpa/inet.h, netinet/in.h)
-# também para o subprojeto open62541, garantindo que a build interna use os
-# mesmos headers mínimos de rede do firmware.
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Sources/compat)
-
-# Adicionar o subdiretório do open62541 e usar diretamente a biblioteca
-# gerada (target open62541) em vez de copiar o single-file para a árvore
-# do firmware.
-# Não precisa mais, open62541 já está na pasta Middlewares/Open62541 gerado almagamado
-#add_subdirectory(${open62541_SOURCE_DIR} ${open62541_BINARY_DIR})
-
-# Garantir que o executável principal enxergue o header amalgamado
-# open62541.h gerado em ${open62541_BINARY_DIR}.
-target_include_directories(${PROJECT_NAME} PUBLIC ${open62541_BINARY_DIR})
-
-# Linkar a biblioteca open62541 (agora que o target existe)
-if(TARGET open62541)
-  target_link_libraries(${PROJECT_NAME} open62541)
+# Validações de combinação de flags
+if(OPEN62541_COPY AND OPEN62541_SOURCE_DIR)
+    message(FATAL_ERROR "OPEN62541_COPY=ON não é permitido quando OPEN62541_SOURCE_DIR está definido.")
 endif()
 
-# Suprimir warnings específicos do código gerado do open62541, que não
-# controlamos diretamente, evitando que quebrem o build do firmware.
-if(TARGET open62541-object)
-  target_compile_options(open62541-object PRIVATE
-    -Wno-unused-variable
-    -Wno-implicit-function-declaration
-  )
-  target_compile_definitions(open62541-object PRIVATE
-    LWIP_PROVIDE_ERRNO=0
-    LWIP_ERRNO_STDINCLUDE=1
-  )
+if((OPEN62541_SOURCE_DIR OR OPEN62541_COPY) AND NOT OPEN62541_BUILD)
+    message(FATAL_ERROR "OPEN62541_BUILD=ON é obrigatório quando OPEN62541_SOURCE_DIR ou OPEN62541_COPY são usados.")
+endif()
+
+# Clone opcional do repositório
+if(OPEN62541_GIT_CLONE)
+    include(FetchContent)
+    set(_open62541_tag "master")
+    if(OPEN62541_VERSION)
+        # Extrai a última ocorrência de X.Y.Z, mesmo que a string tenha números extras (ex: "0.0.0 1.4.9")
+        string(REGEX MATCHALL "([0-9]+)" _nums "${OPEN62541_VERSION}")
+        list(LENGTH _nums _nums_len)
+        if(_nums_len GREATER_EQUAL 3)
+            list(GET _nums -3 _v1)
+            list(GET _nums -2 _v2)
+            list(GET _nums -1 _v3)
+            set(_open62541_tag "v${_v1}.${_v2}.${_v3}")
+        else()
+            set(_open62541_tag "${OPEN62541_VERSION}")
+        endif()
+    endif()
+
+    FetchContent_Declare(open62541
+        GIT_REPOSITORY https://github.com/open62541/open62541.git
+        GIT_TAG ${_open62541_tag}
+        GIT_SHALLOW TRUE
+        GIT_PROGRESS TRUE
+    )
+
+    # Usar apenas Populate para evitar add_subdirectory duplicado
+    FetchContent_Populate(open62541)
+    set(OPEN62541_SOURCE_DIR ${open62541_SOURCE_DIR})
+endif()
+
+if(OPEN62541_BUILD)
+    if(NOT OPEN62541_SOURCE_DIR)
+        message(FATAL_ERROR "OPEN62541_BUILD=ON requer OPEN62541_SOURCE_DIR definido (diretório clonado do open62541).")
+    endif()
+
+    # Ajustes mínimos da configuração do open62541 (similar ao CMakeLists antigo)
+    set(UA_ARCHITECTURE "freertosLWIP" CACHE STRING "")
+    set(UA_NAMESPACE_ZERO "MINIMAL" CACHE STRING "")
+
+    # Habilitar geração em single-file (amalgamado)
+    set(UA_ENABLE_AMALGAMATION ON CACHE BOOL "Enable open62541 single-file generation" FORCE)
+
+    # Desabilitar funcionalidades não usadas no firmware e que dependem
+    # de uma stack POSIX completa (sockets avançados, event loop, etc.).
+    set(UA_ENABLE_SUBSCRIPTIONS "OFF" CACHE BOOL "" FORCE)
+    set(UA_ENABLE_METHODCALLS "OFF" CACHE BOOL "" FORCE)
+    set(UA_ENABLE_HISTORIZING "OFF" CACHE BOOL "" FORCE)
+    set(UA_ENABLE_SUBSCRIPTIONS_EVENTS "OFF" CACHE BOOL "" FORCE)
+    set(UA_ENABLE_ENCRYPTION OFF CACHE BOOL "" FORCE)
+    set(UA_MULTITHREADING 0 CACHE BOOL "" FORCE)
+
+    set(UA_ENABLE_DISCOVERY "OFF" CACHE BOOL "" FORCE)
+    set(UA_ENABLE_DISCOVERY_MULTICAST "OFF" CACHE BOOL "" FORCE)
+    set(UA_ENABLE_PUBSUB "OFF" CACHE BOOL "" FORCE)
+    set(UA_ENABLE_PUBSUB_INFORMATIONMODEL "OFF" CACHE BOOL "" FORCE)
+    set(UA_ENABLE_PUBSUB_UDP "OFF" CACHE BOOL "" FORCE)
+    set(UA_ENABLE_WEBSOCKET_SERVER "OFF" CACHE BOOL "" FORCE)
+    set(UA_ENABLE_EVENTLOOP "OFF" CACHE BOOL "" FORCE)
+
+    # Desligar suporte IPv6 no open62541 para evitar uso de constantes
+    # e estruturas que não existem no ambiente LwIP bare-metal.
+    set(UA_ENABLE_IPV6 OFF CACHE BOOL "" FORCE)
+
+    # Build do open62541 em diretório dedicado, evitando conflito com _deps
+    add_subdirectory(${OPEN62541_SOURCE_DIR} ${OPEN62541_BUILD_DIR})
+
+    # Se NÃO estivermos em modo de cópia (OPEN62541_COPY=OFF), usar a
+    # biblioteca open62541 diretamente a partir do subprojeto.
+    if(NOT OPEN62541_COPY)
+        # Garantir que o executável principal enxergue o header/binary do open62541
+        target_include_directories(${PROJECT_NAME} PUBLIC ${OPEN62541_BUILD_DIR})
+
+        # Linkar a biblioteca open62541 se o target existir
+        if(TARGET open62541)
+            target_link_libraries(${PROJECT_NAME} open62541)
+        endif()
+    else()
+        # Em modo OPEN62541_COPY=ON, usamos apenas os artefatos gerados
+        # (open62541.c/.h copiados para Middlewares) e não precisamos
+        # compilar/linkar a biblioteca interna do subprojeto.
+        if(TARGET open62541)
+            set_target_properties(open62541 PROPERTIES EXCLUDE_FROM_ALL TRUE)
+        endif()
+        if(TARGET open62541-object)
+            set_target_properties(open62541-object PROPERTIES EXCLUDE_FROM_ALL TRUE)
+        endif()
+        if(TARGET open62541-plugins)
+            set_target_properties(open62541-plugins PROPERTIES EXCLUDE_FROM_ALL TRUE)
+        endif()
+    endif()
+
+    # Suprimir warnings específicos do código gerado do open62541, que não
+    # controlamos diretamente, evitando que quebrem o build do firmware.
+    if(TARGET open62541-object)
+      target_compile_options(open62541-object PRIVATE
+        -Wno-unused-variable
+        -Wno-implicit-function-declaration
+        -Wno-unused-label
+        -Wno-error=format
+        -Wno-format
+      )
+
+      # Garantir definição de NI_NUMERICHOST mesmo que o header de sistema
+      # não a forneça. Usada apenas para logging no open62541.
+      target_compile_definitions(open62541-object PRIVATE
+        NI_NUMERICHOST=0x01
+      )
+
+      # Disponibilizar headers de compatibilidade (ex.: sys/ioctl.h stub)
+      # apenas para o build interno do open62541.
+      target_include_directories(open62541-object BEFORE PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/Sources/compat
+      )
+    endif()
+
+    # Se solicitado, copiar o single-file gerado para Middlewares/Open62541
+    if(OPEN62541_COPY)
+        add_custom_target(open62541-copy-singlefile ALL
+            DEPENDS open62541-code-generation
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+                    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Open62541
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${OPEN62541_BUILD_DIR}/open62541.c
+                    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Open62541/open62541.c
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${OPEN62541_BUILD_DIR}/open62541.h
+                    ${CMAKE_CURRENT_SOURCE_DIR}/Middlewares/Open62541/open62541.h
+        )
+    endif()
 endif()
 
 # Aplicar as mesmas supressões ao alvo principal, já que o single-file

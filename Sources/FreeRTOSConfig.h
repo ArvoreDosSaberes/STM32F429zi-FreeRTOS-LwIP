@@ -42,7 +42,7 @@
 /* Configurações de memória */
 #define configSUPPORT_STATIC_ALLOCATION         1
 #define configSUPPORT_DYNAMIC_ALLOCATION        1
-#define configTOTAL_HEAP_SIZE                   ( ( size_t ) ( 40 * 1024 ) ) /* 40 KB */
+#define configTOTAL_HEAP_SIZE                   ( ( size_t ) ( 80 * 1024 ) ) /* 80 KB para suportar pilhas das tasks MQTT/OPC UA */
 #define configAPPLICATION_ALLOCATED_HEAP        0
 
 /* Configurações de hook functions */
