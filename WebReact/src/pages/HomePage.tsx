@@ -1,9 +1,46 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import STLogo from '../components/STLogo';
 import Butterfly from '../components/Butterfly';
 import '../styles/home.css';
 
 const HomePage: React.FC = () => {
+  const [pageLoadTimeMs, setPageLoadTimeMs] = useState<number | null>(null);
+
+  useEffect(() => {
+    try {
+      const navigationEntries = performance.getEntriesByType('navigation');
+      let loadTime = 0;
+
+      if (navigationEntries && navigationEntries.length > 0) {
+        const nav = navigationEntries[0] as PerformanceNavigationTiming;
+        loadTime = nav.loadEventEnd - nav.startTime;
+      } else if ((performance as any).timing) {
+        const timing = (performance as any).timing;
+        loadTime = timing.loadEventEnd - timing.navigationStart;
+      }
+
+      if (loadTime > 0) {
+        const rounded = Math.round(loadTime);
+        setPageLoadTimeMs(rounded);
+
+        const baseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+        if (baseUrl) {
+          void fetch(`${baseUrl}/page-load`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'text/plain',
+            },
+            body: String(rounded),
+          }).catch(() => {
+            // Falha na telemetria não deve impactar a UI
+          });
+        }
+      }
+    } catch {
+      // Ignora erros de performance API
+    }
+  }, []);
+
   return (
     <div className="page-root-home">
       <div className="container">
@@ -24,6 +61,14 @@ const HomePage: React.FC = () => {
         </div>
 
         <div className="content">
+          <div className="page-load-box">
+            <h3>Tempo de carregamento da página</h3>
+            <p>
+              {pageLoadTimeMs !== null
+                ? `${pageLoadTimeMs} ms`
+                : 'Calculando tempo de carregamento...'}
+            </p>
+          </div>
           <h2>Sobre o Projeto</h2>
           <p>
             Este projeto tem como objetivo <strong>ensinar e facilitar o desenvolvimento</strong>
