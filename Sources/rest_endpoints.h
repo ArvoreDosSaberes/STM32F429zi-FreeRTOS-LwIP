@@ -42,12 +42,14 @@ int restHandle_GET_api_v1_temperature(const restRequestContext_t *ctx);
 int restHandle_GET_api_v1_fan(const restRequestContext_t *ctx);
 int restHandle_POST_api_v1_fan(const restRequestContext_t *ctx);
 int restHandle_GET_api_v1_time(const restRequestContext_t *ctx);
+int restHandle_POST_api_v1_page_load(const restRequestContext_t *ctx);
 
 static const restEndpoint_t restEndpoints[] = {
     { "/api/v1/temperature", HTTP_METHOD_GET, restHandle_GET_api_v1_temperature },
     { "/api/v1/fan", HTTP_METHOD_GET, restHandle_GET_api_v1_fan },
     { "/api/v1/fan", HTTP_METHOD_POST, restHandle_POST_api_v1_fan },
     { "/api/v1/time", HTTP_METHOD_GET, restHandle_GET_api_v1_time },
+    { "/api/v1/page-load", HTTP_METHOD_POST, restHandle_POST_api_v1_page_load },
 };
 
 static const unsigned int restEndpointCount = sizeof(restEndpoints) / sizeof(restEndpoints[0]);

@@ -157,6 +157,33 @@
           }
         }
       }
+    },
+    "/page-load": {
+      "post": {
+        "summary": "Registra o tempo de carregamento da página",
+        "description": "Recebe do frontend o tempo total que a página levou para carregar completamente (HTML, CSS, JS e imagens) em milissegundos.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "pattern": "^[0-9]+$",
+                "description": "Tempo de carregamento em milissegundos representado como número inteiro.",
+                "example": "1234"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tempo de carregamento registrado com sucesso"
+          },
+          "400": {
+            "description": "Corpo da requisição inválido"
+          }
+        }
+      }
     }
   }
 }
