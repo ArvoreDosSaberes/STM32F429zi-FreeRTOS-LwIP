@@ -8,7 +8,20 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build:install": "cd WebReact && npm install && npm run build"
+    "dev": "npm --prefix WebReact run dev",
+    "build:web": "npm --prefix WebReact run build:web",
+    "build:web:debug": "npm --prefix WebReact run build:web:debug",
+    "makefs:win": "npm --prefix WebReact run makefs:win",
+    "makefs:unix": "npm --prefix WebReact run makefs:unix",
+    "makefs": "npm --prefix WebReact run makefs",
+    "makefs:win:defl": "npm --prefix WebReact run makefs:win:defl",
+    "makefs:unix:defl": "npm --prefix WebReact run makefs:unix:defl",
+    "makefs:defl": "npm --prefix WebReact run makefs:defl",
+    "build": "npm --prefix WebReact run build",
+    "build:compressed": "npm --prefix WebReact run build:compressed",
+    "build:debug": "npm --prefix WebReact run build:debug",
+    "preview": "npm --prefix WebReact run preview",
+    "build:install": "npm --prefix WebReact run build:install"
   },
   "keywords": [
     "STM32",
