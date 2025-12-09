@@ -7,3 +7,5 @@ Release
 CMakeFiles
 CMakeCache.txt
 _deps
+node_modules
+env.cmake
